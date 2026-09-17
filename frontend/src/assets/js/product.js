@@ -28,13 +28,10 @@ function fillSubCategoryOptions(categorySelect, subCategorySelect) {
   });
 }
 
-async function createProduct(payload) {
+async function createProduct(formData) {
   const response = await fetch(`${API_BASE_URL}/products`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
+    body: formData,
   });
 
   const data = await response.json().catch(() => ({}));
@@ -72,20 +69,23 @@ if (productForm) {
     setLoading(submitButton, true, "Add Product");
 
     try {
-      await createProduct({
-        title: document.getElementById("productName").value,
-        sku_id: document.getElementById("productSKU").value,
-        quantity: Number(document.getElementById("productStock").value),
-        category_name: categorySelect.options[categorySelect.selectedIndex].text,
-        sub_category_name: subCategorySelect.value,
-        image: imageInput.files[0]?.name || "",
-        description: document.getElementById("productDescription").value,
-        unit: document.getElementById("productUnit").value,
-        retail_price: Number(document.getElementById("productPrice").value),
-        customer_display_price: Number(document.getElementById("productCustomerDisplayPrice").value),
-        bought_price: Number(document.getElementById("productBoughtPrice").value),
-        whole_sale_price: Number(document.getElementById("productWholeSalePrice").value),
-      });
+      const formData = new FormData();
+      formData.append("title", document.getElementById("productName").value);
+      formData.append("sku_id", document.getElementById("productSKU").value);
+      formData.append("quantity", document.getElementById("productStock").value);
+      formData.append("category_name", categorySelect.options[categorySelect.selectedIndex].text);
+      formData.append("sub_category_name", subCategorySelect.value);
+      formData.append("description", document.getElementById("productDescription").value);
+      formData.append("unit", document.getElementById("productUnit").value);
+      formData.append("retail_price", document.getElementById("productPrice").value);
+      formData.append("customer_display_price", document.getElementById("productCustomerDisplayPrice").value);
+      formData.append("bought_price", document.getElementById("productBoughtPrice").value);
+      formData.append("whole_sale_price", document.getElementById("productWholeSalePrice").value);
+      if (imageInput.files[0]) {
+        formData.append("image", imageInput.files[0]);
+      }
+
+      await createProduct(formData);
 
       showAlert(alert, "success", "Product created successfully.");
       productForm.reset();

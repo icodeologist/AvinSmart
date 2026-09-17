@@ -3,8 +3,14 @@ package products
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
+	"io"
 	"net/http"
+	"os"
+	"path/filepath"
+	"strconv"
 	"strings"
+	"time"
 
 	"avinsmart/backend/internal/models"
 
@@ -12,50 +18,61 @@ import (
 	"gorm.io/gorm"
 )
 
-type createProductRequest struct {
-	Title           string  `json:"title"`
-	SKUID           string  `json:"sku_id"`
-	RetailPrice     float64 `json:"retail_price"`
-	Quantity        int     `json:"quantity"`
-	CategoryName    string  `json:"category_name"`
-	SubCategoryName string  `json:"sub_category_name"`
-	Image           string  `json:"image"`
-	Description     string  `json:"description"`
-}
+const (
+	uploadsDir    = "static/images/uploads"
+	maxUploadSize = 10 << 20 // 10 MB
+)
 
 func CreateProduct(db *gorm.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var payload createProductRequest
-		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		if err := r.ParseMultipartForm(maxUploadSize); err != nil {
 			writeJSON(w, http.StatusBadRequest, map[string]string{
-				"error": "invalid json body",
+				"error": "invalid form data",
 			})
 			return
 		}
 
-		payload.Title = strings.TrimSpace(payload.Title)
-		payload.SKUID = strings.TrimSpace(payload.SKUID)
-		payload.CategoryName = strings.TrimSpace(payload.CategoryName)
-		payload.SubCategoryName = strings.TrimSpace(payload.SubCategoryName)
-		payload.Image = strings.TrimSpace(payload.Image)
-		payload.Description = strings.TrimSpace(payload.Description)
+		title := strings.TrimSpace(r.FormValue("title"))
+		skuID := strings.TrimSpace(r.FormValue("sku_id"))
+		categoryName := strings.TrimSpace(r.FormValue("category_name"))
+		subCategoryName := strings.TrimSpace(r.FormValue("sub_category_name"))
+		description := strings.TrimSpace(r.FormValue("description"))
+		unit := strings.TrimSpace(r.FormValue("unit"))
 
-		if payload.Title == "" || payload.SKUID == "" || payload.CategoryName == "" || payload.SubCategoryName == "" {
+		retailPrice, _ := strconv.ParseFloat(r.FormValue("retail_price"), 64)
+		customerDisplayPrice, _ := strconv.ParseFloat(r.FormValue("customer_display_price"), 64)
+		boughtPrice, _ := strconv.ParseFloat(r.FormValue("bought_price"), 64)
+		wholeSalePrice, _ := strconv.ParseFloat(r.FormValue("whole_sale_price"), 64)
+		quantity, _ := strconv.Atoi(r.FormValue("quantity"))
+
+		if title == "" || skuID == "" || categoryName == "" || subCategoryName == "" {
 			writeJSON(w, http.StatusBadRequest, map[string]string{
 				"error": "title, sku_id, category_name, and sub_category_name are required",
 			})
 			return
 		}
 
-		if payload.RetailPrice < 0 || payload.Quantity < 0 {
+		if retailPrice < 0 || quantity < 0 {
 			writeJSON(w, http.StatusBadRequest, map[string]string{
 				"error": "retail_price and quantity cannot be negative",
 			})
 			return
 		}
 
+		imageURL := ""
+		if file, header, err := r.FormFile("image"); err == nil {
+			defer file.Close()
+			imageURL, err = saveUploadedImage(file, header.Filename)
+			if err != nil {
+				writeJSON(w, http.StatusInternalServerError, map[string]string{
+					"error": "could not save image",
+				})
+				return
+			}
+		}
+
 		var category models.Category
-		if err := db.Where(models.Category{Name: payload.CategoryName}).FirstOrCreate(&category).Error; err != nil {
+		if err := db.Where(models.Category{Name: categoryName}).FirstOrCreate(&category).Error; err != nil {
 			writeJSON(w, http.StatusInternalServerError, map[string]string{
 				"error": "could not prepare category",
 			})
@@ -65,7 +82,7 @@ func CreateProduct(db *gorm.DB) http.HandlerFunc {
 		var subCategory models.SubCategory
 		if err := db.Where(models.SubCategory{
 			CategoryID: category.ID,
-			Name:       payload.SubCategoryName,
+			Name:       subCategoryName,
 		}).FirstOrCreate(&subCategory).Error; err != nil {
 			writeJSON(w, http.StatusInternalServerError, map[string]string{
 				"error": "could not prepare subcategory",
@@ -74,14 +91,18 @@ func CreateProduct(db *gorm.DB) http.HandlerFunc {
 		}
 
 		product := models.Product{
-			Title:         payload.Title,
-			Description:   payload.Description,
-			CategoryID:    category.ID,
-			SubCategoryID: &subCategory.ID,
-			SKUID:         payload.SKUID,
-			Quantity:      payload.Quantity,
-			RetailPrice:   payload.RetailPrice,
-			Image:         payload.Image,
+			Title:                title,
+			Description:          description,
+			CategoryID:           category.ID,
+			SubCategoryID:        &subCategory.ID,
+			SKUID:                skuID,
+			Quantity:             quantity,
+			Unit:                 unit,
+			RetailPrice:          retailPrice,
+			CustomerDisplayPrice: customerDisplayPrice,
+			BoughtPrice:          boughtPrice,
+			WholeSalePrice:       wholeSalePrice,
+			Image:                imageURL,
 		}
 
 		if err := db.Create(&product).Error; err != nil {
@@ -100,6 +121,33 @@ func CreateProduct(db *gorm.DB) http.HandlerFunc {
 
 		writeJSON(w, http.StatusCreated, product)
 	}
+}
+
+func saveUploadedImage(file io.Reader, filename string) (string, error) {
+	if err := os.MkdirAll(uploadsDir, 0o755); err != nil {
+		return "", err
+	}
+
+	ext := filepath.Ext(filename)
+	ext = strings.ToLower(ext)
+	if ext == "" {
+		ext = ".png"
+	}
+
+	name := fmt.Sprintf("%d%s", time.Now().UnixNano(), ext)
+	savedPath := filepath.Join(uploadsDir, name)
+
+	out, err := os.Create(savedPath)
+	if err != nil {
+		return "", err
+	}
+	defer out.Close()
+
+	if _, err := io.Copy(out, file); err != nil {
+		return "", err
+	}
+
+	return "/static/images/uploads/" + name, nil
 }
 
 func writeJSON(w http.ResponseWriter, statusCode int, payload any) {

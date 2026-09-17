@@ -16,6 +16,7 @@ var allowedOrigins = []string{
 func New(db *gorm.DB) http.Handler {
 	r := chi.NewRouter()
 	r.Use(corsMiddleware)
+	r.Handle("/static/*", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 	r.Get("/", rootHandler)
 	r.Get("/ping", rootHandler)
 	r.Get("/health/db", databaseHealthHandler(db))
