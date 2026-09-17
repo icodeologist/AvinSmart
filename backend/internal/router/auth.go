@@ -12,13 +12,7 @@ import (
 func AuthRoutes(db *gorm.DB) http.Handler {
 	r := chi.NewRouter()
 	r.Post("/register", auth.RegisterAdmin(db))
-	r.Post("/login", loginHandler)
+	r.Post("/login", auth.LoginAdmin(db))
 
 	return r
-}
-
-func loginHandler(w http.ResponseWriter, r *http.Request) {
-	writeJSON(w, http.StatusNotImplemented, map[string]string{
-		"message": "login endpoint ready",
-	})
 }
