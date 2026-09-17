@@ -22,6 +22,7 @@ func New(db *gorm.DB) http.Handler {
 
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Mount("/auth", AuthRoutes(db))
+		r.Mount("/products", ProductRoutes(db))
 	})
 
 	return r
