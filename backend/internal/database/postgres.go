@@ -32,8 +32,17 @@ func Connect(ctx context.Context, databaseURL string) (*gorm.DB, error) {
 }
 
 func AutoMigrate(db *gorm.DB) error {
-	return db.AutoMigrate(
+	if err := db.AutoMigrate(
+		&models.Admin{},
 		&models.Category{},
 		&models.Product{},
-	)
+	); err != nil {
+		return err
+	}
+
+	if db.Migrator().HasColumn(&models.Admin{}, "photo") {
+		return db.Migrator().DropColumn(&models.Admin{}, "photo")
+	}
+
+	return nil
 }
