@@ -10,3 +10,7 @@ type Category struct {
 func (Category) TableName() string {
 	return "categories"
 }
+
+type SubCategory struct {
+	ID uint `gorm:"primaryKey;column:id" json:"id"`
+}
