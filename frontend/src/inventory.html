@@ -180,12 +180,14 @@
         <div class="col-12">
           <div>
             <div class="d-flex gap-2 mb-3 flex-wrap justify-content-between">
-              <input type="text" class="form-control" placeholder="Search products..." style="max-width: 250px;">
+              <div class="d-flex gap-2 flex-wrap">
+                <input type="text" id="searchInput" class="form-control" placeholder="Search products..." style="max-width: 250px;">
+                <select id="categoryFilter" class="form-select" style="max-width: 180px;">
+                  <option value="">All Categories</option>
+                </select>
+              </div>
               <div class="d-flex gap-2">
 
-                <button class="btn btn-outline-secondary">
-                  <i class="ti ti-filter"></i> Filter
-                </button>
                 <button class="btn btn-outline-secondary">
                   <i class="ti ti-file-excel"></i> Excel
                 </button>
@@ -204,7 +206,10 @@
                   <th>Code</th>
                   <th>Category</th>
                   <th>Subcategory</th>
-                  <th>Price</th>
+                  <th>Bought Price</th>
+                  <th>Whole Sale</th>
+                  <th>Retail Price</th>
+                  <th>Customer Display</th>
                   <th>Unit</th>
                   <th>Quantity</th>
                   <th>Action</th>
@@ -212,14 +217,14 @@
               </thead>
               <tbody id="inventoryTableBody">
                 <tr>
-                  <td colspan="8" class="text-center py-4 text-secondary">Loading products...</td>
+                  <td colspan="11" class="text-center py-4 text-secondary">Loading products...</td>
                 </tr>
               </tbody>
               <tfoot class="">
 
                 <tr>
                   <td class="border-bottom-0">Showing product per page</td>
-                  <td colspan="9" class="border-bottom-0">
+                  <td colspan="10" class="border-bottom-0">
                     <nav aria-label="Page navigation" class="d-flex justify-content-end">
                       <ul class="pagination mb-0">
                         <li class="page-item disabled">
