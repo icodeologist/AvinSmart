@@ -2,7 +2,7 @@ const API_BASE_URL = "http://localhost:8080/api/v1";
 
 function showAlert(element, type, message) {
   element.className = `alert alert-${type}`;
-  element.textContent = message;
+  element.innerHTML = message;
 }
 
 function setLoading(button, isLoading, label) {
@@ -61,9 +61,12 @@ if (signupForm) {
         phone_num: document.getElementById("phoneNum").value,
       });
 
-      showAlert(alert, "success", "Registration successful. You can sign in now.");
+      showAlert(alert, "success", "Registration successful. Redirecting to login...");
       signupForm.reset();
       signupForm.classList.remove("was-validated");
+      setTimeout(() => {
+        window.location.href = "signin.html";
+      }, 800);
     } catch (error) {
       showAlert(alert, "danger", error.message);
     } finally {
@@ -95,9 +98,16 @@ if (signinForm) {
       });
 
       localStorage.setItem("admin", JSON.stringify(data.admin));
-      showAlert(alert, "success", "Login successful.");
+      showAlert(alert, "success", "Login successful. Redirecting to dashboard...");
+      setTimeout(() => {
+        window.location.href = "index.html";
+      }, 600);
     } catch (error) {
-      showAlert(alert, "danger", error.message);
+      showAlert(
+        alert,
+        "danger",
+        `${error.message}. New admin? <a href="signup.html" class="alert-link">Create an account</a>.`,
+      );
     } finally {
       setLoading(submitButton, false, "Sign in");
     }
