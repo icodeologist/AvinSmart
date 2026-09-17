@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"encoding/json"
 	"net/http"
 	"strings"
 
@@ -22,7 +21,7 @@ type registerAdminRequest struct {
 func RegisterAdmin(db *gorm.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var payload registerAdminRequest
-		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		if err := decodeJSONBody(r, &payload); err != nil {
 			writeJSON(w, http.StatusBadRequest, map[string]string{
 				"error": "invalid json body",
 			})
@@ -40,7 +39,7 @@ func RegisterAdmin(db *gorm.DB) http.HandlerFunc {
 			return
 		}
 
-		if !strings.Contains(payload.Email, "@") {
+		if !isValidEmail(payload.Email) {
 			writeJSON(w, http.StatusBadRequest, map[string]string{
 				"error": "email must be valid",
 			})
@@ -77,6 +76,13 @@ func RegisterAdmin(db *gorm.DB) http.HandlerFunc {
 		}
 
 		if err := db.Create(&admin).Error; err != nil {
+			if isUniqueViolation(err) {
+				writeJSON(w, http.StatusConflict, map[string]string{
+					"error": "admin username or email already exists",
+				})
+				return
+			}
+
 			writeJSON(w, http.StatusInternalServerError, map[string]string{
 				"error": "could not create admin",
 			})

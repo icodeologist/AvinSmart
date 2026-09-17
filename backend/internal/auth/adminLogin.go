@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"encoding/json"
 	"errors"
 	"net/http"
 	"strings"
@@ -20,7 +19,7 @@ type loginAdminRequest struct {
 func LoginAdmin(db *gorm.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var payload loginAdminRequest
-		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		if err := decodeJSONBody(r, &payload); err != nil {
 			writeJSON(w, http.StatusBadRequest, map[string]string{
 				"error": "invalid json body",
 			})
@@ -36,7 +35,7 @@ func LoginAdmin(db *gorm.DB) http.HandlerFunc {
 			return
 		}
 
-		if !strings.Contains(payload.Email, "@") {
+		if !isValidEmail(payload.Email) {
 			writeJSON(w, http.StatusBadRequest, map[string]string{
 				"error": "email must be valid",
 			})
