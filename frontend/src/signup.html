@@ -27,11 +27,12 @@
 
       </div>
 
-      <form class="needs-validation mt-3" novalidate>
+      <form id="signupForm" class="needs-validation mt-3" novalidate>
+        <div id="signupAlert" class="alert d-none" role="alert"></div>
         <div class="mb-3">
-          <label for="fullName" class="form-label">Full name</label>
-          <input id="fullName" type="text" class="form-control" placeholder="Jane Doe" required>
-          <div class="invalid-feedback">Please enter your name.</div>
+          <label for="username" class="form-label">Username</label>
+          <input id="username" type="text" class="form-control" placeholder="admin" required>
+          <div class="invalid-feedback">Please enter a username.</div>
         </div>
 
         <div class="mb-3">
@@ -41,9 +42,15 @@
         </div>
 
         <div class="mb-3">
+          <label for="phoneNum" class="form-label">Phone number</label>
+          <input id="phoneNum" type="tel" class="form-control" placeholder="9876543210" required>
+          <div class="invalid-feedback">Please enter your phone number.</div>
+        </div>
+
+        <div class="mb-3">
           <label for="password" class="form-label">Password</label>
-          <input id="password" type="password" class="form-control" placeholder="Create a password" required minlength="6">
-          <div class="invalid-feedback">Please provide a password (min 6 characters).</div>
+          <input id="password" type="password" class="form-control" placeholder="Create a password" required minlength="8">
+          <div class="invalid-feedback">Please provide a password (min 8 characters).</div>
         </div>
 
         <div class="mb-3">
@@ -59,7 +66,7 @@
           <div class="invalid-feedback">You must agree before continuing.</div>
         </div>
 
-        <button class="btn btn-primary w-100" type="submit">Sign up</button>
+        <button id="signupSubmit" class="btn btn-primary w-100" type="submit">Sign up</button>
       </form>
 
       <div class="text-center mt-3 small text-muted">
@@ -73,6 +80,7 @@
 
   <!-- Bootstrap JS -->
   <script src="./assets/js/main.js" type="module"></script>
+  <script src="./assets/js/auth.js" type="module"></script>
 
 
 </body>
