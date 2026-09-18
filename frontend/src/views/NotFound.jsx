@@ -7,8 +7,7 @@ export default function NotFound() {
         <div className="text-center">
           <div className="mb-4">
             <Link to="/" className="d-inline-block mb-4">
-              <img src="/assets/images/logo-icon.svg" alt="" width="36" />
-              <span className="ms-2"><img src="/assets/images/logo.svg" alt="" /></span>
+              <span className="avin-logo" aria-label="AvinSmart"><span className="avin-logo__avin"><span className="avin-logo__a">A</span>vin</span><span className="avin-logo__smart"><span className="avin-logo__s">S</span>mart</span></span>
             </Link>
           </div>
 

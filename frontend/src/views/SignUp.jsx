@@ -55,8 +55,7 @@ export default function SignUp() {
         <div className="card-body p-5">
           <div className="text-center mb-3">
             <Link to="/" className="mb-4 d-inline-block">
-              <img src="/assets/images/logo-icon.svg" alt="" width="36" />
-              <span className="ms-2"><img src="/assets/images/logo.svg" alt="" /></span>
+              <span className="avin-logo" aria-label="AvinSmart"><span className="avin-logo__avin"><span className="avin-logo__a">A</span>vin</span><span className="avin-logo__smart"><span className="avin-logo__s">S</span>mart</span></span>
             </Link>
             <h1 className="card-title mb-5 h5">Create your account</h1>
           </div>
