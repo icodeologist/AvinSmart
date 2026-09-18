@@ -1,23 +1,30 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import PageHeader from "../components/PageHeader.jsx";
-import SalarySummary from "../components/SalarySummary.jsx";
-import SalaryTable from "../components/SalaryTable.jsx";
+import PageHeader from "../components/layout/PageHeader.jsx";
+import SalarySummary from "../components/staff/SalarySummary.jsx";
+import SalaryTable from "../components/staff/SalaryTable.jsx";
 import { fetchSalaryRecords, getSalarySummary, markSalaryPaid } from "../api/salaryApi.js";
 
 export default function ManageSalaries() {
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
 
   useEffect(() => {
     let cancelled = false;
-    fetchSalaryRecords().then((data) => {
-      if (cancelled) return;
-      setRecords(data);
-      setLoading(false);
-    });
+    fetchSalaryRecords()
+      .then((data) => {
+        if (cancelled) return;
+        setRecords(data);
+        setLoading(false);
+      })
+      .catch((fetchError) => {
+        if (cancelled) return;
+        setError(fetchError.message);
+        setLoading(false);
+      });
     return () => {
       cancelled = true;
     };
@@ -35,19 +42,30 @@ export default function ManageSalaries() {
   }, [records, search, status]);
 
   async function handleMarkPaid(record) {
-    const updated = await markSalaryPaid(record);
-    setRecords((prev) => prev.map((item) => (item.id === record.id ? updated : item)));
+    try {
+      const updated = await markSalaryPaid(record);
+      setRecords((prev) => prev.map((item) => (item.id === record.id ? updated : item)));
+      setError("");
+    } catch (paymentError) {
+      setError(paymentError.message);
+    }
   }
 
   return (
     <>
       <PageHeader title="Manage Salaries" subtitle="Review monthly pay and payment status for your staff">
-        <Link to="/" className="btn btn-secondary">
+        <Link to="/staff" className="btn btn-secondary">
           <i className="ti ti-arrow-left me-1"></i>Back to Staff
         </Link>
       </PageHeader>
 
       <SalarySummary summary={summary} />
+
+      {error ? (
+        <div className="alert alert-danger d-flex align-items-center" role="alert">
+          <i className="ti ti-alert-triangle me-2"></i><span>{error}</span>
+        </div>
+      ) : null}
 
       <section className="card">
         <div className="card-header bg-transparent px-4 py-3">

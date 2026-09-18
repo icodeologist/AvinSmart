@@ -1,4 +1,4 @@
-import { staffStatusBadge, formatDate } from "../ui/format.jsx";
+import { staffStatusBadge, formatDate } from "../../ui/format.jsx";
 
 export default function StaffCard({ member }) {
   return (

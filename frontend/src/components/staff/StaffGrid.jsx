@@ -1,6 +1,6 @@
 import StaffCard from "./StaffCard.jsx";
-import EmptyState from "./EmptyState.jsx";
-import LoadingState from "./LoadingState.jsx";
+import EmptyState from "../ui/EmptyState.jsx";
+import LoadingState from "../ui/LoadingState.jsx";
 
 export default function StaffGrid({ staff, loading }) {
   if (loading) {

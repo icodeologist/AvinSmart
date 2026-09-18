@@ -1,5 +1,5 @@
-import EmptyState from "./EmptyState.jsx";
-import { formatCurrency, formatDate, salaryStatusBadge } from "../ui/format.jsx";
+import EmptyState from "../ui/EmptyState.jsx";
+import { formatCurrency, formatDate, salaryStatusBadge } from "../../ui/format.jsx";
 
 export default function SalaryTable({ records, onMarkPaid }) {
   if (!records.length) {

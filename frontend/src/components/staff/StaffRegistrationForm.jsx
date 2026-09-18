@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { createStaff } from "../api/staffApi.js";
+import { createStaff } from "../../api/staffApi.js";
 
 export default function StaffRegistrationForm() {
   const navigate = useNavigate();
@@ -22,7 +22,7 @@ export default function StaffRegistrationForm() {
     setError("");
     try {
       await createStaff(staff);
-      navigate("/", { state: { registered: staff.name } });
+      navigate("/staff", { state: { registered: staff.name } });
     } catch (submissionError) {
       setError(submissionError.message || "Could not register staff.");
     } finally {

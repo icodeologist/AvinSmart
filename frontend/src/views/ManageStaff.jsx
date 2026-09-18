@@ -1,22 +1,29 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import PageHeader from "../components/PageHeader.jsx";
-import StaffGrid from "../components/StaffGrid.jsx";
+import PageHeader from "../components/layout/PageHeader.jsx";
+import StaffGrid from "../components/staff/StaffGrid.jsx";
 import { fetchStaff } from "../api/staffApi.js";
 
 export default function ManageStaff() {
   const [staff, setStaff] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const location = useLocation();
   const [registeredName, setRegisteredName] = useState(location.state?.registered || "");
 
   useEffect(() => {
     let cancelled = false;
-    fetchStaff().then((data) => {
-      if (cancelled) return;
-      setStaff(data);
-      setLoading(false);
-    });
+    fetchStaff()
+      .then((data) => {
+        if (cancelled) return;
+        setStaff(data);
+        setLoading(false);
+      })
+      .catch((fetchError) => {
+        if (cancelled) return;
+        setError(fetchError.message);
+        setLoading(false);
+      });
     return () => {
       cancelled = true;
     };
@@ -25,10 +32,10 @@ export default function ManageStaff() {
   return (
     <>
       <PageHeader title="Manage Staff" subtitle="View your staff members">
-        <Link to="/salaries" className="btn btn-primary">
+        <Link to="/staff/salaries" className="btn btn-primary">
           <i className="ti ti-wallet me-1"></i>View Staff Salaries
         </Link>
-        <Link to="/register" className="btn btn-outline-primary">
+        <Link to="/staff/register" className="btn btn-outline-primary">
           <i className="ti ti-user-plus me-1"></i>Register New Staff
         </Link>
       </PageHeader>
@@ -40,11 +47,17 @@ export default function ManageStaff() {
         </div>
       ) : null}
 
-      <div className="row g-4">
-        <div className="col-12">
-          <StaffGrid staff={staff} loading={loading} />
+      {error ? (
+        <div className="alert alert-danger d-flex align-items-center mb-4" role="alert">
+          <i className="ti ti-alert-triangle me-2"></i><span>{error}</span>
         </div>
-      </div>
+      ) : (
+        <div className="row g-4">
+          <div className="col-12">
+            <StaffGrid staff={staff} loading={loading} />
+          </div>
+        </div>
+      )}
     </>
   );
 }

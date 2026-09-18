@@ -1,4 +1,4 @@
-import { formatCurrency } from "../ui/format.jsx";
+import { formatCurrency } from "../../ui/format.jsx";
 
 export default function SalarySummary({ summary }) {
   return (
