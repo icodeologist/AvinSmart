@@ -8,6 +8,8 @@ type Product struct {
 	ID                   uint         `gorm:"primaryKey;column:id" json:"id"`
 	Title                string       `gorm:"column:title;type:varchar(180);not null" json:"title"`
 	Description          string       `gorm:"column:description;type:text" json:"description"`
+	OutletID             uint         `gorm:"column:outlet_id;not null;default:0;index" json:"outlet_id"`
+	Outlet               Outlet       `gorm:"foreignKey:OutletID;constraint:OnUpdate:CASCADE,OnDelete:RESTRICT" json:"outlet,omitempty"`
 	CategoryID           uint         `gorm:"column:category_id;not null;index" json:"category_id"`
 	Category             Category     `gorm:"foreignKey:CategoryID;constraint:OnUpdate:CASCADE,OnDelete:RESTRICT" json:"category"`
 	SubCategoryID        *uint        `gorm:"column:sub_category_id;index" json:"sub_category_id,omitempty"`

@@ -44,6 +44,7 @@ func CreateProduct(db *gorm.DB) http.HandlerFunc {
 		boughtPrice, _ := strconv.ParseFloat(r.FormValue("bought_price"), 64)
 		wholeSalePrice, _ := strconv.ParseFloat(r.FormValue("whole_sale_price"), 64)
 		quantity, _ := strconv.Atoi(r.FormValue("quantity"))
+		outletID, _ := strconv.Atoi(r.FormValue("outlet_id"))
 
 		if title == "" || skuID == "" || categoryName == "" || subCategoryName == "" {
 			writeJSON(w, http.StatusBadRequest, map[string]string{
@@ -57,6 +58,18 @@ func CreateProduct(db *gorm.DB) http.HandlerFunc {
 				"error": "retail_price and quantity cannot be negative",
 			})
 			return
+		}
+
+		if outletID == 0 {
+			var seed models.Outlet
+			if err := db.Where(models.Outlet{Name: "Main Branch"}).
+				First(&seed).Error; err != nil {
+				writeJSON(w, http.StatusInternalServerError, map[string]string{
+					"error": "could not resolve outlet",
+				})
+				return
+			}
+			outletID = int(seed.ID)
 		}
 
 		imageURL := ""
@@ -93,6 +106,7 @@ func CreateProduct(db *gorm.DB) http.HandlerFunc {
 		product := models.Product{
 			Title:                title,
 			Description:          description,
+			OutletID:             uint(outletID),
 			CategoryID:           category.ID,
 			SubCategoryID:        &subCategory.ID,
 			SKUID:                skuID,
