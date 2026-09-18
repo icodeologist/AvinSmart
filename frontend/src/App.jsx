@@ -1,6 +1,7 @@
 import { Routes, Route } from "react-router-dom";
 import AppLayout from "./components/layout/AppLayout.jsx";
 import Dashboard from "./views/Dashboard.jsx";
+import CreateBill from "./views/CreateBill.jsx";
 import Inventory from "./views/Inventory.jsx";
 import CreateProduct from "./views/CreateProduct.jsx";
 import AddCategory from "./views/AddCategory.jsx";
@@ -25,6 +26,7 @@ export default function App() {
         <Route path="/outlets" element={<ManageOutlets />} />
         <Route path="/reports" element={<Reports />} />
         <Route path="/docs" element={<Docs />} />
+        <Route path="/bills/create" element={<CreateBill />} />
         <Route path="/staff" element={<ManageStaff />} />
         <Route path="/staff/register" element={<RegisterStaff />} />
         <Route path="/staff/salaries" element={<ManageSalaries />} />
