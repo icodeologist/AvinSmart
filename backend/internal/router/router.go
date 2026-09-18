@@ -29,6 +29,7 @@ func New(db *gorm.DB, cfg config.Config) http.Handler {
 		r.Mount("/outlets", OutletRoutes(db))
 		r.Mount("/staff", StaffRoutes(db, cfg))
 		r.Mount("/salaries", SalaryRoutes(db, cfg))
+		r.Mount("/bills", BillRoutes(db))
 	})
 
 	return r
