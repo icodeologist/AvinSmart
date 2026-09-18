@@ -5,10 +5,45 @@ import react from '@vitejs/plugin-react'
 // Grab all HTML files inside src (including subfolders)
 const htmlFiles = glob.sync('./src/**/*.html')
 
+// React staff module is a single SPA entry mounted at /staff.
+// Map its clean routes to the entry HTML so both the dev server
+// and `vite preview` support /staff, /staff/register and /staff/salaries
+// without per-route HTML files.
+const staffSpaRewrite = () => {
+  const isStaffRoute = (path) => {
+    if (path === '/staff' || path === '/staff/') return true;
+    if (!path.startsWith('/staff/')) return false;
+    if (path.startsWith('/staff-app')) return false;
+    const last = path.slice('/staff/'.length);
+    // Let dev module/asset requests (e.g. /staff/main.jsx) pass through.
+    if (/\.[a-zA-Z0-9]+$/.test(last)) return false;
+    return true;
+  };
+
+  const middleware = (req, _res, next) => {
+    if (req.method === 'GET') {
+      const path = (req.url || '').split('?')[0];
+      if (isStaffRoute(path)) {
+        req.url = '/staff-app.html';
+      }
+    }
+    next();
+  };
+
+  return {
+    name: 'staff-spa-rewrite',
+    configureServer(server) {
+      server.middlewares.use(middleware);
+    },
+    configurePreviewServer(server) {
+      server.middlewares.use(middleware);
+    },
+  };
+}
 
 export default defineConfig({
-   base: './',
-   plugins: [react()],
+   base: '/',
+   plugins: [react(), staffSpaRewrite()],
    root: resolve(__dirname, 'src'),   // ✅ keeps dev server working
    server: {
     host: true,

@@ -5,6 +5,7 @@ import { createStaff } from "../api/staffApi.js";
 export default function StaffRegistrationForm() {
   const navigate = useNavigate();
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -14,11 +15,19 @@ export default function StaffRegistrationForm() {
       email: event.currentTarget.staffEmail.value.trim(),
       phone: event.currentTarget.staffPhone.value.trim(),
       role: event.currentTarget.staffRole.value,
+      password: event.currentTarget.staffPassword.value,
     };
 
     setSubmitting(true);
-    await createStaff(staff);
-    navigate("/", { state: { registered: staff.name } });
+    setError("");
+    try {
+      await createStaff(staff);
+      navigate("/", { state: { registered: staff.name } });
+    } catch (submissionError) {
+      setError(submissionError.message || "Could not register staff.");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -26,6 +35,7 @@ export default function StaffRegistrationForm() {
       <div className="card-body p-4">
         <h3 className="h5 mb-0">Add New Staff Member</h3>
         <p className="mb-0 small text-muted">Register a new staff member</p>
+        {error ? <div className="alert alert-danger py-2 mt-3" role="alert">{error}</div> : null}
         <form onSubmit={handleSubmit}>
           <div className="row g-3">
             <div className="col-md-6">
@@ -49,6 +59,10 @@ export default function StaffRegistrationForm() {
                 <option value="inventory">Inventory</option>
                 <option value="support">Support</option>
               </select>
+            </div>
+            <div className="col-md-6">
+              <label htmlFor="staffPassword" className="form-label">Temporary password</label>
+              <input type="password" className="form-control" id="staffPassword" minLength="8" required />
             </div>
           </div>
           <div className="d-flex gap-2 mt-4">

@@ -17,7 +17,7 @@ export default function Topbar({ onToggle, onMobileOpen }) {
             <span className="visually-hidden">unread messages</span>
           </span>
         </a>
-        <img src="./assets/images/avatar/avatar-1.jpg" alt="Account" className="avatar avatar-sm rounded-circle" />
+        <img src="/assets/images/avatar/avatar-1.jpg" alt="Account" className="avatar avatar-sm rounded-circle" />
       </div>
     </nav>
   );

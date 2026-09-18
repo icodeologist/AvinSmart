@@ -39,13 +39,20 @@ const localStaff = [];
 
 function normalize(member) {
   return {
+    id: member.id,
     name: member.name || "Unknown",
     email: member.email || "",
     phone: member.phone || "",
     role: member.role || "staff",
     status: member.status || "active",
-    joinedOn: member.joinedOn || "",
+    joinedOn: member.joinedOn || member.created_at || "",
   };
+}
+
+function unwrap(data) {
+  return data && data.success && Object.prototype.hasOwnProperty.call(data, "data")
+    ? data.data
+    : data;
 }
 
 export function getFallbackStaff() {
@@ -55,7 +62,7 @@ export function getFallbackStaff() {
 export async function fetchStaff() {
   try {
     const response = await fetch(`${API_BASE_URL}/staff`);
-    const data = await response.json().catch(() => []);
+    const data = unwrap(await response.json().catch(() => []));
 
     if (!response.ok) {
       throw new Error(data.error || "Could not fetch staff");
@@ -71,6 +78,7 @@ export async function createStaff(staff) {
   const payload = {
     name: String(staff.name || "").trim(),
     email: String(staff.email || "").trim(),
+    password: String(staff.password || ""),
     phone: String(staff.phone || "").trim(),
     role: staff.role || "staff",
     status: "active",
@@ -83,18 +91,21 @@ export async function createStaff(staff) {
       body: JSON.stringify(payload),
     });
 
+    const data = await response.json().catch(() => ({}));
     if (!response.ok) {
-      const data = await response.json().catch(() => ({}));
       throw new Error(data.error || "Could not create staff");
     }
 
-    const created = await response.json().catch(() => null);
+    const created = unwrap(data);
     if (created && typeof created === "object" && !Array.isArray(created)) {
       localStaff.unshift(normalize({ ...payload, ...created }));
     } else {
       localStaff.unshift(createLocalRecord(payload));
     }
   } catch (error) {
+    if (!(error instanceof TypeError)) {
+      throw error;
+    }
     localStaff.unshift(createLocalRecord(payload));
   }
 

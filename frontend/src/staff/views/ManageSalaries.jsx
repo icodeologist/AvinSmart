@@ -1,14 +1,27 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import PageHeader from "../components/PageHeader.jsx";
 import SalarySummary from "../components/SalarySummary.jsx";
 import SalaryTable from "../components/SalaryTable.jsx";
-import { getSalaryRecords, getSalarySummary, markSalaryPaid } from "../api/salaryApi.js";
+import { fetchSalaryRecords, getSalarySummary, markSalaryPaid } from "../api/salaryApi.js";
 
 export default function ManageSalaries() {
-  const [records, setRecords] = useState(() => getSalaryRecords());
+  const [records, setRecords] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchSalaryRecords().then((data) => {
+      if (cancelled) return;
+      setRecords(data);
+      setLoading(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const summary = useMemo(() => getSalarySummary(records), [records]);
 
@@ -21,8 +34,9 @@ export default function ManageSalaries() {
     });
   }, [records, search, status]);
 
-  function handleMarkPaid(record) {
-    setRecords((prev) => prev.map((item) => (item.id === record.id ? markSalaryPaid(item) : item)));
+  async function handleMarkPaid(record) {
+    const updated = await markSalaryPaid(record);
+    setRecords((prev) => prev.map((item) => (item.id === record.id ? updated : item)));
   }
 
   return (
@@ -69,7 +83,7 @@ export default function ManageSalaries() {
             </div>
           </div>
         </div>
-        <SalaryTable records={filtered} onMarkPaid={handleMarkPaid} />
+        {loading ? <div className="text-center py-5 text-secondary">Loading salary records...</div> : <SalaryTable records={filtered} onMarkPaid={handleMarkPaid} />}
       </section>
     </>
   );
