@@ -37,6 +37,8 @@ func AutoMigrate(db *gorm.DB) error {
 		&models.Category{},
 		&models.SubCategory{},
 		&models.Outlet{},
+		&models.Staff{},
+		&models.Salary{},
 	); err != nil {
 		return err
 	}

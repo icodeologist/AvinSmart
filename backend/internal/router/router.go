@@ -25,6 +25,8 @@ func New(db *gorm.DB) http.Handler {
 		r.Mount("/auth", AuthRoutes(db))
 		r.Mount("/products", ProductRoutes(db))
 		r.Mount("/outlets", OutletRoutes(db))
+		r.Mount("/staff", StaffRoutes(db))
+		r.Mount("/salaries", SalaryRoutes(db))
 	})
 
 	return r
@@ -36,7 +38,7 @@ func corsMiddleware(next http.Handler) http.Handler {
 		if slices.Contains(allowedOrigins, origin) {
 			w.Header().Set("Access-Control-Allow-Origin", origin)
 		}
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PATCH, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 
 		if r.Method == http.MethodOptions {

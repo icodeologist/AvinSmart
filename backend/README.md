@@ -31,3 +31,46 @@ Then open:
 - http://localhost:8080/
 - http://localhost:8080/ping
 - http://localhost:8080/health/db
+
+## JSON API
+
+All API requests use JSON bodies and all responses use the common envelope:
+
+```json
+{ "success": true, "data": {} }
+```
+
+Staff endpoints:
+
+- `GET /api/v1/staff`
+- `POST /api/v1/staff/register`
+- `POST /api/v1/staff/login`
+
+Example registration body:
+
+```json
+{
+  "name": "Jane Smith",
+  "email": "jane@example.com",
+  "password": "change-me-123",
+  "phone": "+1 512 555 0178",
+  "role": "sales"
+}
+```
+
+Salary endpoints:
+
+- `GET /api/v1/salaries`
+- `POST /api/v1/salaries`
+- `PATCH /api/v1/salaries/{id}/pay`
+
+Example salary body:
+
+```json
+{
+  "staff_id": 1,
+  "amount": 3200,
+  "currency": "USD",
+  "pay_period": "2026-09"
+}
+```
