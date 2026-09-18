@@ -14,6 +14,8 @@ import ManageSalaries from "./views/ManageSalaries.jsx";
 import SignIn from "./views/SignIn.jsx";
 import SignUp from "./views/SignUp.jsx";
 import NotFound from "./views/NotFound.jsx";
+import CashFlow from "./views/CashFlow.jsx";
+import AdminProfile from "./views/AdminProfile.jsx";
 
 export default function App() {
   return (
@@ -25,6 +27,8 @@ export default function App() {
         <Route path="/categories/add" element={<AddCategory />} />
         <Route path="/outlets" element={<ManageOutlets />} />
         <Route path="/reports" element={<Reports />} />
+        <Route path="/cash-flow" element={<CashFlow />} />
+        <Route path="/profile" element={<AdminProfile />} />
         <Route path="/docs" element={<Docs />} />
         <Route path="/bills/create" element={<CreateBill />} />
         <Route path="/staff" element={<ManageStaff />} />

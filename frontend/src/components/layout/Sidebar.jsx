@@ -9,11 +9,12 @@ const mainLinks = [
   { to: "/bills/create", icon: "ti ti-file-invoice", label: "Create Bill" },
   { to: "/staff", icon: "ti ti-users", label: "Manage Staff" },
   { to: "/reports", icon: "ti ti-receipt", label: "Reports" },
+  { to: "/cash-flow", icon: "ti ti-cash", label: "Cash Flow" },
   { to: "/404", icon: "ti ti-alert-circle", label: "404 Error" },
-  { to: "/docs", icon: "ti ti-file-text", label: "Docs" },
 ];
 
 const accountLinks = [
+  { to: "/profile", icon: "ti ti-user-circle", label: "My Profile" },
   { to: "/login", icon: "ti ti-logout", label: "Log in" },
   { to: "/signup", icon: "ti ti-user-plus", label: "Sign up" },
 ];
@@ -28,9 +29,7 @@ export default function Sidebar({ collapsed, mobileOpen }) {
   return (
     <aside id="sidebar" className={className}>
       <div className="logo-area">
-        <Link to="/" className="d-inline-flex"><img src="/assets/images/logo-icon.svg" alt="" width="24" />
-          <span className="logo-text ms-2"><img src="/assets/images/logo.svg" alt="" /></span>
-        </Link>
+        <Link to="/" className="avin-logo" aria-label="AvinSmart"><span className="avin-logo__avin"><span className="avin-logo__a">A</span>vin</span><span className="avin-logo__smart"><span className="avin-logo__s">S</span>mart</span></Link>
       </div>
 
       <ul className="nav flex-column">
