@@ -96,6 +96,125 @@
 .date-time-box {
 	min-width: 210px;
 }
+.staff-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+	gap: 1rem;
+}
+.staff-card {
+	background: $white;
+	border: 1px solid $gray-200;
+	border-radius: 8px;
+	padding: 1.25rem;
+	height: 100%;
+	box-shadow: 0 2px 8px rgba(33, 37, 41, 0.04);
+}
+.staff-card__header {
+	display: flex;
+	align-items: flex-start;
+	gap: .75rem;
+}
+.staff-card__avatar {
+	flex: 0 0 42px;
+	width: 42px;
+	height: 42px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: 50%;
+	background: rgba($primary, .1);
+	color: $primary;
+	font-size: 1.25rem;
+}
+.staff-card__identity {
+	min-width: 0;
+	flex: 1;
+}
+.staff-card__name {
+	font-size: 1rem;
+	margin: 0;
+	font-weight: 600;
+}
+.staff-card__email {
+	margin: .25rem 0 0;
+	color: $gray-600;
+	font-size: .875rem;
+	word-break: break-word;
+}
+.staff-card .badge {
+	white-space: nowrap;
+}
+.staff-card__details {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: .85rem;
+	margin: 1.25rem 0 0;
+	padding-top: 1rem;
+	border-top: 1px solid $gray-200;
+}
+.staff-card__details div:last-child {
+	grid-column: 1 / -1;
+}
+.staff-card__details dt {
+	color: $gray-600;
+	font-size: .75rem;
+	font-weight: 500;
+	margin-bottom: .2rem;
+}
+.staff-card__details dd {
+	margin: 0;
+	font-size: .875rem;
+	text-transform: capitalize;
+	word-break: break-word;
+}
+.staff-grid__empty {
+	grid-column: 1 / -1;
+}
+.salary-summary {
+	display: grid;
+	grid-template-columns: repeat(4, minmax(0, 1fr));
+	gap: 1rem;
+}
+.salary-summary__card {
+	display: flex;
+	align-items: center;
+	gap: .85rem;
+	background: $white;
+	border: 1px solid $gray-200;
+	border-radius: 8px;
+	padding: 1rem;
+}
+.salary-summary__card p {
+	color: $gray-600;
+	font-size: .8rem;
+	margin: 0 0 .25rem;
+}
+.salary-summary__card strong {
+	font-size: 1.15rem;
+	font-weight: 600;
+}
+.salary-summary__icon {
+	width: 38px;
+	height: 38px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: 50%;
+	font-size: 1.1rem;
+}
+.salary-filters .input-group {
+	min-width: 210px;
+}
+.salary-filters .form-select {
+	min-width: 150px;
+}
+.salary-table th {
+	font-size: .75rem;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: .02em;
+	color: $gray-600;
+}
 @media (max-width: 992px) {
 	.sidebar {
 		left: -240px;
@@ -109,6 +228,19 @@
 	}
 	.content {
 		margin-left: 0 !important;
+	}
+	.salary-summary {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+}
+@media (max-width: 576px) {
+	.salary-summary {
+		grid-template-columns: 1fr;
+	}
+	.salary-filters .input-group,
+	.salary-filters .form-select {
+		min-width: 0;
+		width: 100%;
 	}
 }
 
