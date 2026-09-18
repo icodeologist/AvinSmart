@@ -7,7 +7,7 @@ export const subCategoriesByCategory = {
 };
 
 export function formatPrice(value) {
-  return `$${Number(value || 0).toFixed(2)}`;
+  return `₹${Number(value || 0).toFixed(2)}`;
 }
 
 export function productImagePath(product) {
@@ -30,9 +30,10 @@ export function productImagePath(product) {
   return `/assets/images/${product.image}`;
 }
 
-export async function fetchProducts() {
+export async function fetchProducts(search = "") {
   try {
-    const response = await fetch(`${API_BASE_URL}/products`);
+    const query = search.trim() ? `?q=${encodeURIComponent(search.trim())}` : "";
+    const response = await fetch(`${API_BASE_URL}/products${query}`);
     const data = unwrap(await response.json().catch(() => []));
 
     if (!response.ok) {
