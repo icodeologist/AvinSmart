@@ -74,3 +74,16 @@ Example salary body:
   "pay_period": "2026-09"
 }
 ```
+
+## Authentication
+
+`POST /api/v1/auth/login` and `POST /api/v1/staff/login` return a JWT in `data.token`.
+Send it on protected requests with:
+
+```text
+Authorization: Bearer <token>
+```
+
+Staff registration and login are public. Staff listing requires an `admin` or `manager`
+token. All salary endpoints require an `admin` or `manager` token. Set a long random
+`JWT_SECRET` outside local development.

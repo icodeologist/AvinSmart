@@ -3,6 +3,7 @@ module avinsmart/backend
 go 1.23
 
 require (
+	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/go-chi/chi/v5 v5.3.2
 	gorm.io/driver/postgres v1.5.11
 	gorm.io/gorm v1.25.12

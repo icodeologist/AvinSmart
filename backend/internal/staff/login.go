@@ -6,6 +6,8 @@ import (
 	"strings"
 
 	"avinsmart/backend/internal/api"
+	"avinsmart/backend/internal/auth"
+	"avinsmart/backend/internal/config"
 	"avinsmart/backend/internal/models"
 
 	"golang.org/x/crypto/bcrypt"
@@ -29,7 +31,7 @@ func (r *loginRequest) validate() api.Fields {
 	return fields
 }
 
-func Login(db *gorm.DB) http.HandlerFunc {
+func Login(db *gorm.DB, cfg config.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var payload loginRequest
 		if err := api.DecodeJSON(r, &payload); err != nil {
@@ -55,6 +57,15 @@ func Login(db *gorm.DB) http.HandlerFunc {
 			return
 		}
 
-		api.WriteSuccess(w, http.StatusOK, member)
+		token, err := auth.IssueToken(cfg, member.ID, member.Email, member.Role, "staff")
+		if err != nil {
+			api.WriteError(w, http.StatusInternalServerError, "could not create auth token")
+			return
+		}
+
+		api.WriteSuccess(w, http.StatusOK, map[string]any{
+			"token": token,
+			"user":  member,
+		})
 	}
 }

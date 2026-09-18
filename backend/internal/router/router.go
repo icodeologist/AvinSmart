@@ -4,6 +4,8 @@ import (
 	"net/http"
 	"slices"
 
+	"avinsmart/backend/internal/config"
+
 	"github.com/go-chi/chi/v5"
 	"gorm.io/gorm"
 )
@@ -13,7 +15,7 @@ var allowedOrigins = []string{
 	"http://localhost:3001",
 }
 
-func New(db *gorm.DB) http.Handler {
+func New(db *gorm.DB, cfg config.Config) http.Handler {
 	r := chi.NewRouter()
 	r.Use(corsMiddleware)
 	r.Handle("/static/*", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
@@ -22,11 +24,11 @@ func New(db *gorm.DB) http.Handler {
 	r.Get("/health/db", databaseHealthHandler(db))
 
 	r.Route("/api/v1", func(r chi.Router) {
-		r.Mount("/auth", AuthRoutes(db))
+		r.Mount("/auth", AuthRoutes(db, cfg))
 		r.Mount("/products", ProductRoutes(db))
 		r.Mount("/outlets", OutletRoutes(db))
-		r.Mount("/staff", StaffRoutes(db))
-		r.Mount("/salaries", SalaryRoutes(db))
+		r.Mount("/staff", StaffRoutes(db, cfg))
+		r.Mount("/salaries", SalaryRoutes(db, cfg))
 	})
 
 	return r
@@ -39,7 +41,7 @@ func corsMiddleware(next http.Handler) http.Handler {
 			w.Header().Set("Access-Control-Allow-Origin", origin)
 		}
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PATCH, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 
 		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusNoContent)

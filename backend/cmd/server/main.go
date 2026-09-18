@@ -30,7 +30,7 @@ func main() {
 
 	log.Printf("database connected and migrated")
 	log.Printf("server listening on http://localhost%s", cfg.Address)
-	if err := http.ListenAndServe(cfg.Address, router.New(db)); err != nil {
+	if err := http.ListenAndServe(cfg.Address, router.New(db, cfg)); err != nil {
 		log.Fatal(err)
 	}
 }
