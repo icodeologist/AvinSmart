@@ -1,20 +1,18 @@
 package products
 
 import (
-	"encoding/json"
+	"encoding/base64"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"time"
 
+	"avinsmart/backend/internal/api"
 	"avinsmart/backend/internal/models"
 
-	"github.com/jackc/pgx/v5/pgconn"
 	"gorm.io/gorm"
 )
 
@@ -23,154 +21,184 @@ const (
 	maxUploadSize = 10 << 20 // 10 MB
 )
 
+type createProductRequest struct {
+	Title                string  `json:"title"`
+	Description          string  `json:"description"`
+	OutletID             *uint   `json:"outlet_id"`
+	CategoryName         string  `json:"category_name"`
+	SubCategoryName      string  `json:"sub_category_name"`
+	SKUID                string  `json:"sku_id"`
+	Quantity             int     `json:"quantity"`
+	Unit                 string  `json:"unit"`
+	RetailPrice          float64 `json:"retail_price"`
+	CustomerDisplayPrice float64 `json:"customer_display_price"`
+	BoughtPrice          float64 `json:"bought_price"`
+	WholeSalePrice       float64 `json:"whole_sale_price"`
+	ImageBase64          string  `json:"image_base64"`
+}
+
+func (r *createProductRequest) validate() api.Fields {
+	fields := api.Fields{}
+
+	r.Title = strings.TrimSpace(r.Title)
+	r.SKUID = strings.TrimSpace(r.SKUID)
+	r.CategoryName = strings.TrimSpace(r.CategoryName)
+	r.SubCategoryName = strings.TrimSpace(r.SubCategoryName)
+
+	if r.Title == "" {
+		fields.Add("title", "title is required")
+	}
+
+	if r.SKUID == "" {
+		fields.Add("sku_id", "sku_id is required")
+	}
+
+	if r.CategoryName == "" {
+		fields.Add("category_name", "category_name is required")
+	}
+
+	if r.SubCategoryName == "" {
+		fields.Add("sub_category_name", "sub_category_name is required")
+	}
+
+	if r.RetailPrice < 0 {
+		fields.Add("retail_price", "retail_price cannot be negative")
+	}
+
+	if r.Quantity < 0 {
+		fields.Add("quantity", "quantity cannot be negative")
+	}
+
+	return fields
+}
+
 func CreateProduct(db *gorm.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if err := r.ParseMultipartForm(maxUploadSize); err != nil {
-			writeJSON(w, http.StatusBadRequest, map[string]string{
-				"error": "invalid form data",
-			})
+		var payload createProductRequest
+		if err := api.DecodeJSON(r, &payload); err != nil {
+			api.WriteError(w, http.StatusBadRequest, "invalid json body")
 			return
 		}
 
-		title := strings.TrimSpace(r.FormValue("title"))
-		skuID := strings.TrimSpace(r.FormValue("sku_id"))
-		categoryName := strings.TrimSpace(r.FormValue("category_name"))
-		subCategoryName := strings.TrimSpace(r.FormValue("sub_category_name"))
-		description := strings.TrimSpace(r.FormValue("description"))
-		unit := strings.TrimSpace(r.FormValue("unit"))
-
-		retailPrice, _ := strconv.ParseFloat(r.FormValue("retail_price"), 64)
-		customerDisplayPrice, _ := strconv.ParseFloat(r.FormValue("customer_display_price"), 64)
-		boughtPrice, _ := strconv.ParseFloat(r.FormValue("bought_price"), 64)
-		wholeSalePrice, _ := strconv.ParseFloat(r.FormValue("whole_sale_price"), 64)
-		quantity, _ := strconv.Atoi(r.FormValue("quantity"))
-		outletID, _ := strconv.Atoi(r.FormValue("outlet_id"))
-
-		if title == "" || skuID == "" || categoryName == "" || subCategoryName == "" {
-			writeJSON(w, http.StatusBadRequest, map[string]string{
-				"error": "title, sku_id, category_name, and sub_category_name are required",
-			})
+		if fields := payload.validate(); fields.HasErrors() {
+			api.WriteValidation(w, "invalid request payload", fields)
 			return
 		}
 
-		if retailPrice < 0 || quantity < 0 {
-			writeJSON(w, http.StatusBadRequest, map[string]string{
-				"error": "retail_price and quantity cannot be negative",
-			})
-			return
-		}
-
-		if outletID == 0 {
+		outletID := payload.OutletID
+		if outletID == nil || *outletID == 0 {
 			var seed models.Outlet
-			if err := db.Where(models.Outlet{Name: "Main Branch"}).
-				First(&seed).Error; err != nil {
-				writeJSON(w, http.StatusInternalServerError, map[string]string{
-					"error": "could not resolve outlet",
-				})
+			if err := db.Where(models.Outlet{Name: "Main Branch"}).First(&seed).Error; err != nil {
+				api.WriteError(w, http.StatusInternalServerError, "could not resolve outlet")
 				return
 			}
-			outletID = int(seed.ID)
+			seedID := seed.ID
+			outletID = &seedID
 		}
 
 		imageURL := ""
-		if file, header, err := r.FormFile("image"); err == nil {
-			defer file.Close()
-			imageURL, err = saveUploadedImage(file, header.Filename)
+		if payload.ImageBase64 != "" {
+			var err error
+			imageURL, err = saveImageFromDataURI(payload.ImageBase64)
 			if err != nil {
-				writeJSON(w, http.StatusInternalServerError, map[string]string{
-					"error": "could not save image",
-				})
+				api.WriteError(w, http.StatusBadRequest, "invalid image_base64")
 				return
 			}
 		}
 
 		var category models.Category
-		if err := db.Where(models.Category{Name: categoryName}).FirstOrCreate(&category).Error; err != nil {
-			writeJSON(w, http.StatusInternalServerError, map[string]string{
-				"error": "could not prepare category",
-			})
+		if err := db.Where(models.Category{Name: payload.CategoryName}).FirstOrCreate(&category).Error; err != nil {
+			api.WriteError(w, http.StatusInternalServerError, "could not prepare category")
 			return
 		}
 
 		var subCategory models.SubCategory
 		if err := db.Where(models.SubCategory{
 			CategoryID: category.ID,
-			Name:       subCategoryName,
+			Name:       payload.SubCategoryName,
 		}).FirstOrCreate(&subCategory).Error; err != nil {
-			writeJSON(w, http.StatusInternalServerError, map[string]string{
-				"error": "could not prepare subcategory",
-			})
+			api.WriteError(w, http.StatusInternalServerError, "could not prepare subcategory")
 			return
 		}
 
 		product := models.Product{
-			Title:                title,
-			Description:          description,
-			OutletID:             uint(outletID),
+			Title:                payload.Title,
+			Description:          payload.Description,
+			OutletID:             *outletID,
 			CategoryID:           category.ID,
 			SubCategoryID:        &subCategory.ID,
-			SKUID:                skuID,
-			Quantity:             quantity,
-			Unit:                 unit,
-			RetailPrice:          retailPrice,
-			CustomerDisplayPrice: customerDisplayPrice,
-			BoughtPrice:          boughtPrice,
-			WholeSalePrice:       wholeSalePrice,
+			SKUID:                payload.SKUID,
+			Quantity:             payload.Quantity,
+			Unit:                 payload.Unit,
+			RetailPrice:          payload.RetailPrice,
+			CustomerDisplayPrice: payload.CustomerDisplayPrice,
+			BoughtPrice:          payload.BoughtPrice,
+			WholeSalePrice:       payload.WholeSalePrice,
 			Image:                imageURL,
 		}
 
 		if err := db.Create(&product).Error; err != nil {
-			if isUniqueViolation(err) {
-				writeJSON(w, http.StatusConflict, map[string]string{
-					"error": "product sku already exists",
-				})
+			if api.IsUniqueViolation(err) {
+				api.WriteError(w, http.StatusConflict, "product sku already exists")
 				return
 			}
 
-			writeJSON(w, http.StatusInternalServerError, map[string]string{
-				"error": "could not create product",
-			})
+			api.WriteError(w, http.StatusInternalServerError, "could not create product")
 			return
 		}
 
-		writeJSON(w, http.StatusCreated, product)
+		api.WriteSuccess(w, http.StatusCreated, product)
 	}
 }
 
-func saveUploadedImage(file io.Reader, filename string) (string, error) {
-	if err := os.MkdirAll(uploadsDir, 0o755); err != nil {
-		return "", err
+func saveImageFromDataURI(dataURI string) (string, error) {
+	commaIdx := strings.Index(dataURI, "base64,")
+	if commaIdx < 0 {
+		return "", errors.New("invalid data uri")
 	}
 
-	ext := filepath.Ext(filename)
-	ext = strings.ToLower(ext)
+	encoded := dataURI[commaIdx+len("base64,"):]
+	raw, err := base64.StdEncoding.DecodeString(encoded)
+	if err != nil {
+		return "", err
+	}
+	if len(raw) == 0 {
+		return "", errors.New("empty image data")
+	}
+	if len(raw) > maxUploadSize {
+		return "", errors.New("image too large")
+	}
+
+	ext := extFromMIME(http.DetectContentType(raw))
 	if ext == "" {
 		ext = ".png"
+	}
+
+	if err := os.MkdirAll(uploadsDir, 0o755); err != nil {
+		return "", err
 	}
 
 	name := fmt.Sprintf("%d%s", time.Now().UnixNano(), ext)
 	savedPath := filepath.Join(uploadsDir, name)
 
-	out, err := os.Create(savedPath)
-	if err != nil {
-		return "", err
-	}
-	defer out.Close()
-
-	if _, err := io.Copy(out, file); err != nil {
+	if err := os.WriteFile(savedPath, raw, 0o644); err != nil {
 		return "", err
 	}
 
 	return "/static/images/uploads/" + name, nil
 }
 
-func writeJSON(w http.ResponseWriter, statusCode int, payload any) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(statusCode)
-	_ = json.NewEncoder(w).Encode(payload)
-}
-
-func isUniqueViolation(err error) bool {
-	var pgErr *pgconn.PgError
-	return errors.As(err, &pgErr) && pgErr.Code == "23505"
+func extFromMIME(mime string) string {
+	switch mime {
+	case "image/jpeg":
+		return ".jpg"
+	case "image/png":
+		return ".png"
+	case "image/webp":
+		return ".webp"
+	case "image/gif":
+		return ".gif"
+	default:
+		return ""
+	}
 }

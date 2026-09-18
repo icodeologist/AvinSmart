@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"avinsmart/backend/internal/api"
 	"avinsmart/backend/internal/models"
 
 	"gorm.io/gorm"
@@ -19,12 +20,10 @@ func ListProducts(db *gorm.DB) http.HandlerFunc {
 		}
 
 		if err := query.Order("created_at desc").Find(&products).Error; err != nil {
-			writeJSON(w, http.StatusInternalServerError, map[string]string{
-				"error": "could not fetch products",
-			})
+			api.WriteError(w, http.StatusInternalServerError, "could not fetch products")
 			return
 		}
 
-		writeJSON(w, http.StatusOK, products)
+		api.WriteSuccess(w, http.StatusOK, products)
 	}
 }

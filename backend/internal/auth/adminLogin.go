@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strings"
 
+	"avinsmart/backend/internal/api"
 	"avinsmart/backend/internal/models"
 
 	"golang.org/x/crypto/bcrypt"
@@ -16,57 +17,53 @@ type loginAdminRequest struct {
 	Password string `json:"password"`
 }
 
+func (r *loginAdminRequest) validate() api.Fields {
+	fields := api.Fields{}
+
+	r.Email = strings.TrimSpace(r.Email)
+
+	if r.Email == "" {
+		fields.Add("email", "email is required")
+	} else if !api.IsValidEmail(r.Email) {
+		fields.Add("email", "email must be valid")
+	}
+
+	if r.Password == "" {
+		fields.Add("password", "password is required")
+	}
+
+	return fields
+}
+
 func LoginAdmin(db *gorm.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var payload loginAdminRequest
-		if err := decodeJSONBody(r, &payload); err != nil {
-			writeJSON(w, http.StatusBadRequest, map[string]string{
-				"error": "invalid json body",
-			})
+		if err := api.DecodeJSON(r, &payload); err != nil {
+			api.WriteError(w, http.StatusBadRequest, "invalid json body")
 			return
 		}
 
-		payload.Email = strings.TrimSpace(payload.Email)
-
-		if payload.Email == "" || payload.Password == "" {
-			writeJSON(w, http.StatusBadRequest, map[string]string{
-				"error": "email and password are required",
-			})
-			return
-		}
-
-		if !isValidEmail(payload.Email) {
-			writeJSON(w, http.StatusBadRequest, map[string]string{
-				"error": "email must be valid",
-			})
+		if fields := payload.validate(); fields.HasErrors() {
+			api.WriteValidation(w, "invalid request payload", fields)
 			return
 		}
 
 		var admin models.Admin
 		if err := db.Where("email = ?", payload.Email).First(&admin).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
-				writeJSON(w, http.StatusUnauthorized, map[string]string{
-					"error": "invalid email or password",
-				})
+				api.WriteError(w, http.StatusUnauthorized, "invalid email or password")
 				return
 			}
 
-			writeJSON(w, http.StatusInternalServerError, map[string]string{
-				"error": "could not login admin",
-			})
+			api.WriteError(w, http.StatusInternalServerError, "could not login admin")
 			return
 		}
 
 		if err := bcrypt.CompareHashAndPassword([]byte(admin.PasswordHash), []byte(payload.Password)); err != nil {
-			writeJSON(w, http.StatusUnauthorized, map[string]string{
-				"error": "invalid email or password",
-			})
+			api.WriteError(w, http.StatusUnauthorized, "invalid email or password")
 			return
 		}
 
-		writeJSON(w, http.StatusOK, map[string]any{
-			"message": "login successful",
-			"admin":   admin,
-		})
+		api.WriteSuccess(w, http.StatusOK, admin)
 	}
 }

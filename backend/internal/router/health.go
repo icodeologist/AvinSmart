@@ -5,11 +5,13 @@ import (
 	"net/http"
 	"time"
 
+	"avinsmart/backend/internal/api"
+
 	"gorm.io/gorm"
 )
 
 func rootHandler(w http.ResponseWriter, r *http.Request) {
-	writeJSON(w, http.StatusOK, map[string]string{
+	api.WriteSuccess(w, http.StatusOK, map[string]string{
 		"message": "Hello World",
 	})
 }
@@ -21,22 +23,16 @@ func databaseHealthHandler(db *gorm.DB) http.HandlerFunc {
 
 		sqlDB, err := db.DB()
 		if err != nil {
-			writeJSON(w, http.StatusServiceUnavailable, map[string]string{
-				"status": "unhealthy",
-				"error":  err.Error(),
-			})
+			api.WriteError(w, http.StatusServiceUnavailable, err.Error())
 			return
 		}
 
 		if err := sqlDB.PingContext(ctx); err != nil {
-			writeJSON(w, http.StatusServiceUnavailable, map[string]string{
-				"status": "unhealthy",
-				"error":  err.Error(),
-			})
+			api.WriteError(w, http.StatusServiceUnavailable, err.Error())
 			return
 		}
 
-		writeJSON(w, http.StatusOK, map[string]string{
+		api.WriteSuccess(w, http.StatusOK, map[string]string{
 			"status": "healthy",
 		})
 	}

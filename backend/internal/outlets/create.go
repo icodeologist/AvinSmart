@@ -1,15 +1,13 @@
 package outlets
 
 import (
-	"encoding/json"
-	"errors"
 	"net/http"
 	"strings"
 	"time"
 
+	"avinsmart/backend/internal/api"
 	"avinsmart/backend/internal/models"
 
-	"github.com/jackc/pgx/v5/pgconn"
 	"gorm.io/gorm"
 )
 
@@ -19,52 +17,54 @@ var validStatuses = map[string]bool{
 	"locked":   true,
 }
 
+type createOutletRequest struct {
+	Name          string `json:"name"`
+	Location      string `json:"location"`
+	ContactPerson string `json:"contact_person"`
+	Phone         string `json:"phone"`
+	Email         string `json:"email"`
+	Status        string `json:"status"`
+}
+
+func (r *createOutletRequest) validate() api.Fields {
+	fields := api.Fields{}
+
+	r.Name = strings.TrimSpace(r.Name)
+	r.Status = strings.TrimSpace(r.Status)
+
+	if r.Name == "" {
+		fields.Add("name", "name is required")
+	}
+
+	if r.Status == "" {
+		r.Status = "active"
+	} else if !validStatuses[r.Status] {
+		fields.Add("status", "status must be one of: active, inactive, locked")
+	}
+
+	return fields
+}
+
 func CreateOutlet(db *gorm.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var input struct {
-			Name          string `json:"name"`
-			Location      string `json:"location"`
-			ContactPerson string `json:"contact_person"`
-			Phone         string `json:"phone"`
-			Email         string `json:"email"`
-			Status        string `json:"status"`
-		}
-
-		if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-			writeJSON(w, http.StatusBadRequest, map[string]string{
-				"error": "invalid request body",
-			})
+		var payload createOutletRequest
+		if err := api.DecodeJSON(r, &payload); err != nil {
+			api.WriteError(w, http.StatusBadRequest, "invalid json body")
 			return
 		}
 
-		input.Name = strings.TrimSpace(input.Name)
-		input.Status = strings.TrimSpace(input.Status)
-
-		if input.Name == "" {
-			writeJSON(w, http.StatusBadRequest, map[string]string{
-				"error": "name is required",
-			})
-			return
-		}
-
-		if input.Status == "" {
-			input.Status = "active"
-		}
-
-		if !validStatuses[input.Status] {
-			writeJSON(w, http.StatusBadRequest, map[string]string{
-				"error": "status must be one of: active, inactive, locked",
-			})
+		if fields := payload.validate(); fields.HasErrors() {
+			api.WriteValidation(w, "invalid request payload", fields)
 			return
 		}
 
 		outlet := models.Outlet{
-			Name:          input.Name,
-			Location:      strings.TrimSpace(input.Location),
-			ContactPerson: strings.TrimSpace(input.ContactPerson),
-			Phone:         strings.TrimSpace(input.Phone),
-			Email:         strings.TrimSpace(input.Email),
-			Status:        input.Status,
+			Name:          payload.Name,
+			Location:      strings.TrimSpace(payload.Location),
+			ContactPerson: strings.TrimSpace(payload.ContactPerson),
+			Phone:         strings.TrimSpace(payload.Phone),
+			Email:         strings.TrimSpace(payload.Email),
+			Status:        payload.Status,
 		}
 
 		if outlet.Status == "locked" {
@@ -73,30 +73,15 @@ func CreateOutlet(db *gorm.DB) http.HandlerFunc {
 		}
 
 		if err := db.Create(&outlet).Error; err != nil {
-			if isUniqueViolation(err) {
-				writeJSON(w, http.StatusConflict, map[string]string{
-					"error": "outlet name already exists",
-				})
+			if api.IsUniqueViolation(err) {
+				api.WriteError(w, http.StatusConflict, "outlet name already exists")
 				return
 			}
 
-			writeJSON(w, http.StatusInternalServerError, map[string]string{
-				"error": "could not create outlet",
-			})
+			api.WriteError(w, http.StatusInternalServerError, "could not create outlet")
 			return
 		}
 
-		writeJSON(w, http.StatusCreated, outlet)
+		api.WriteSuccess(w, http.StatusCreated, outlet)
 	}
-}
-
-func writeJSON(w http.ResponseWriter, statusCode int, payload any) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(statusCode)
-	_ = json.NewEncoder(w).Encode(payload)
-}
-
-func isUniqueViolation(err error) bool {
-	var pgErr *pgconn.PgError
-	return errors.As(err, &pgErr) && pgErr.Code == "23505"
 }
