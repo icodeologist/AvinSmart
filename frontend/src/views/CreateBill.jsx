@@ -1,17 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import PageHeader from "../components/layout/PageHeader.jsx";
-import { formatPrice } from "../api/productsApi.js";
+import { fetchProducts, formatPrice } from "../api/productsApi.js";
+import { createBill } from "../api/billsApi.js";
 
 const paymentMethods = ["Cash", "Card", "UPI", "Credit"];
 const priceTiers = [{ value: "retail", label: "Retail price" }, { value: "wholesale", label: "Wholesale price" }];
-const dummyProducts = [
-  { id: 1, title: "Milk 1L", sku_id: "DUMMY-001", quantity: 40, unit: "pcs", retail_price: 60, customer_display_price: 70, bought_price: 48, whole_sale_price: 55 },
-  { id: 2, title: "Milk 1L", sku_id: "DUMMY-002", quantity: 25, unit: "pcs", retail_price: 58, customer_display_price: 68, bought_price: 46, whole_sale_price: 53 },
-  { id: 3, title: "Milk 1L", sku_id: "DUMMY-003", quantity: 18, unit: "pcs", retail_price: 55, customer_display_price: 65, bought_price: 44, whole_sale_price: 50 },
-  { id: 4, title: "Bread 400g", sku_id: "DUMMY-004", quantity: 30, unit: "pack", retail_price: 35, customer_display_price: 42, bought_price: 27, whole_sale_price: 32 },
-  { id: 5, title: "Rice 5kg", sku_id: "DUMMY-005", quantity: 12, unit: "bag", retail_price: 480, customer_display_price: 550, bought_price: 420, whole_sale_price: 460 },
-];
 const todayISO = () => new Date().toISOString().slice(0, 10);
 const nextBillNumber = () => `BIL-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`;
 const money = (value) => formatPrice(value);
@@ -26,14 +20,20 @@ export default function CreateBill() {
   const [generatedBill, setGeneratedBill] = useState(null);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      if (!search.trim()) { setProducts([]); setHasSearched(false); return; }
+    if (!search.trim()) { setProducts([]); setHasSearched(false); return undefined; }
+    let cancelled = false;
+    const timer = setTimeout(async () => {
       setSearching(true); setSearchError("");
-      const query = search.trim().toLowerCase();
-      setProducts(dummyProducts.filter((product) => `${product.title} ${product.sku_id}`.toLowerCase().includes(query)).slice(0, 3));
-      setHasSearched(true); setSearching(false);
-    }, 150);
-    return () => clearTimeout(timer);
+      try {
+        const results = await fetchProducts(search);
+        if (!cancelled) { setProducts(results.slice(0, 3)); setHasSearched(true); }
+      } catch (error) {
+        if (!cancelled) { setProducts([]); setSearchError(error.message); setHasSearched(true); }
+      } finally {
+        if (!cancelled) setSearching(false);
+      }
+    }, 250);
+    return () => { cancelled = true; clearTimeout(timer); };
   }, [search]);
 
   const totals = items.reduce((result, item) => {
@@ -62,8 +62,26 @@ export default function CreateBill() {
     if (!items.length) { setAlert({ type: "danger", message: "Search and add at least one product." }); return; }
     setSubmitting(true); setAlert(null);
     try {
-      // Prototype flow: keep this bill in the browser until the real API is connected.
-      setGeneratedBill({ billNumber, billDate, customerName, customerPhone, items, customerDisplayTotal: totals.customerDisplay, selectedSubtotal, discount, tax, total, priceTier: effectivePriceTier });
+      const savedBill = await createBill({
+        billNumber,
+        billDate,
+        customerName,
+        customerPhone,
+        paymentMethod: paymentMethod.toLowerCase(),
+        cashier,
+        priceTier: effectivePriceTier,
+        items: items.map((item) => ({
+          ...item,
+          unitPrice: price(item, effectivePriceTier),
+          amount: Number(item.quantity || 0) * price(item, effectivePriceTier),
+        })),
+        subtotal: selectedSubtotal,
+        taxRate,
+        discount,
+        total,
+        notes,
+      });
+      setGeneratedBill({ billNumber, billDate, customerName, customerPhone, items, customerDisplayTotal: savedBill.customer_display_total, selectedSubtotal: savedBill.subtotal, discount: savedBill.discount, tax: savedBill.tax_amount, total: savedBill.total, priceTier: effectivePriceTier, id: savedBill.id });
     } catch (error) { setAlert({ type: "danger", message: error.message }); } finally { setSubmitting(false); }
   }
 

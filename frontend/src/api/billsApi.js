@@ -1,8 +1,14 @@
 import { API_BASE_URL, unwrap } from "./config.js";
 
+function authHeaders() {
+  const token = localStorage.getItem("token");
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 export async function createBill(bill) {
   const payload = {
     bill_number: String(bill.billNumber || "").trim(),
+    bill_date: bill.billDate || "",
     customer_name: String(bill.customerName || "").trim(),
     customer_phone: String(bill.customerPhone || "").trim(),
     payment_method: bill.paymentMethod || "cash",
@@ -11,6 +17,7 @@ export async function createBill(bill) {
     items: (bill.items || []).map((item) => ({
       product_id: item.productId || undefined,
       name: String(item.name || "").trim(),
+      sku_id: String(item.skuId || "").trim(),
       quantity: Number(item.quantity) || 0,
       unit: item.unit || "pcs",
       unit_price: Number(item.unitPrice) || 0,
@@ -20,17 +27,15 @@ export async function createBill(bill) {
       bought_price: Number(item.boughtPrice) || 0,
       whole_sale_price: Number(item.wholeSalePrice) || 0,
     })),
-    subtotal: Number(bill.subtotal) || 0,
     tax_rate: Number(bill.taxRate) || 0,
     discount: Number(bill.discount) || 0,
-    total: Number(bill.total) || 0,
     notes: String(bill.notes || "").trim(),
   };
 
   try {
     const response = await fetch(`${API_BASE_URL}/bills`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...authHeaders() },
       body: JSON.stringify(payload),
     });
 
@@ -43,7 +48,7 @@ export async function createBill(bill) {
     return unwrap(data);
   } catch (error) {
     if (error.name === "TypeError") {
-      throw new Error("Backend not reachable yet — bill is ready to submit once the API is wired up.");
+      throw new Error(`Could not submit bill: ${error.message}`);
     }
     throw error;
   }
