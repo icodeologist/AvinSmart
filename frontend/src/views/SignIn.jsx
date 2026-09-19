@@ -29,7 +29,8 @@ export default function SignIn() {
         password: form.password.value,
       });
 
-      localStorage.setItem("admin", JSON.stringify(data.admin));
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("admin", JSON.stringify(data.user));
       setAlert({ type: "success", message: "Login successful. Redirecting to dashboard..." });
       setTimeout(() => navigate("/"), 600);
     } catch (error) {

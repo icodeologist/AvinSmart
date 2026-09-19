@@ -1,4 +1,4 @@
-import { API_BASE_URL } from "./config.js";
+import { API_BASE_URL, unwrap } from "./config.js";
 
 async function postJSON(path, payload) {
   const response = await fetch(`${API_BASE_URL}${path}`, {
@@ -19,7 +19,7 @@ async function postJSON(path, payload) {
 }
 
 export function login({ email, password }) {
-  return postJSON("/auth/login", { email, password });
+  return postJSON("/auth/login", { email, password }).then(unwrap);
 }
 
 export function register({ username, email, password, reenterPassword, phoneNum }) {
