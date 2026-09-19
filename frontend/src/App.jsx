@@ -16,6 +16,9 @@ import SignUp from "./views/SignUp.jsx";
 import NotFound from "./views/NotFound.jsx";
 import CashFlow from "./views/CashFlow.jsx";
 import AdminProfile from "./views/AdminProfile.jsx";
+import PosLogin from "./views/PosLogin.jsx";
+import PosPage from "./views/PosPage.jsx";
+import Notifications from "./views/Notifications.jsx";
 
 export default function App() {
   return (
@@ -29,12 +32,15 @@ export default function App() {
         <Route path="/reports" element={<Reports />} />
         <Route path="/cash-flow" element={<CashFlow />} />
         <Route path="/profile" element={<AdminProfile />} />
+        <Route path="/notifications" element={<Notifications />} />
         <Route path="/docs" element={<Docs />} />
         <Route path="/bills/create" element={<CreateBill />} />
         <Route path="/staff" element={<ManageStaff />} />
         <Route path="/staff/register" element={<RegisterStaff />} />
         <Route path="/staff/salaries" element={<ManageSalaries />} />
       </Route>
+      <Route path="/pos/login" element={<PosLogin />} />
+      <Route path="/pos" element={<PosPage />} />
       <Route path="/login" element={<SignIn />} />
       <Route path="/signup" element={<SignUp />} />
       <Route path="/404" element={<NotFound />} />

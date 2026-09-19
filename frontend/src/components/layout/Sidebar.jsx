@@ -7,6 +7,7 @@ const mainLinks = [
   { to: "/categories/add", icon: "ti ti-category-plus", label: "Add Category" },
   { to: "/outlets", icon: "ti ti-building-store", label: "Manage Outlets" },
   { to: "/bills/create", icon: "ti ti-file-invoice", label: "Create Bill" },
+  { to: "/pos/login", icon: "ti ti-device-desktop", label: "Staff POS" },
   { to: "/staff", icon: "ti ti-users", label: "Manage Staff" },
   { to: "/reports", icon: "ti ti-receipt", label: "Reports" },
   { to: "/cash-flow", icon: "ti ti-cash", label: "Cash Flow" },

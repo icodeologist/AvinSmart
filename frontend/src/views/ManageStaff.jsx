@@ -47,6 +47,9 @@ export default function ManageStaff() {
   return (
     <>
       <PageHeader title="Manage Staff" subtitle="View your staff members">
+        <Link to="/pos/login" className="btn btn-success">
+          <i className="ti ti-device-desktop me-1"></i>Open Staff POS
+        </Link>
         <Link to="/staff/salaries" className="btn btn-primary">
           <i className="ti ti-wallet me-1"></i>View Staff Salaries
         </Link>
