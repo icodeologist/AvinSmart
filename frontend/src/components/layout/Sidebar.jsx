@@ -1,4 +1,4 @@
-import { Link, NavLink } from "react-router-dom";
+import { Link, NavLink, useNavigate } from "react-router-dom";
 
 const mainLinks = [
   { to: "/", icon: "ti ti-home", label: "Dashboard", end: true },
@@ -16,7 +16,6 @@ const mainLinks = [
 
 const accountLinks = [
   { to: "/profile", icon: "ti ti-user-circle", label: "My Profile" },
-  { to: "/login", icon: "ti ti-logout", label: "Log in" },
   { to: "/signup", icon: "ti ti-user-plus", label: "Sign up" },
 ];
 
@@ -25,7 +24,14 @@ function navLinkClass(isActive) {
 }
 
 export default function Sidebar({ collapsed, mobileOpen }) {
+  const navigate = useNavigate();
   const className = `sidebar${collapsed ? " collapsed" : ""}${mobileOpen ? " mobile-show" : ""}`;
+
+  function logout() {
+    localStorage.removeItem("token");
+    localStorage.removeItem("admin");
+    navigate("/login", { replace: true });
+  }
 
   return (
     <aside id="sidebar" className={className}>
@@ -51,6 +57,11 @@ export default function Sidebar({ collapsed, mobileOpen }) {
             </NavLink>
           </li>
         ))}
+        <li>
+          <button type="button" className="nav-link w-100 border-0 bg-transparent text-start" onClick={logout}>
+            <i className="ti ti-logout"></i><span className="nav-text">Log out</span>
+          </button>
+        </li>
       </ul>
     </aside>
   );
