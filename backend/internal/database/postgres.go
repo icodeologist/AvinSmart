@@ -41,6 +41,7 @@ func AutoMigrate(db *gorm.DB) error {
 		&models.Salary{},
 		&models.Bill{},
 		&models.BillItem{},
+		&models.Notification{},
 	); err != nil {
 		return err
 	}

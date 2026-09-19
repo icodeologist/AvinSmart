@@ -5,6 +5,8 @@ import (
 	"slices"
 
 	"avinsmart/backend/internal/config"
+	"avinsmart/backend/internal/middleware"
+	"avinsmart/backend/internal/notifications"
 
 	"github.com/go-chi/chi/v5"
 	"gorm.io/gorm"
@@ -30,6 +32,7 @@ func New(db *gorm.DB, cfg config.Config) http.Handler {
 		r.Mount("/staff", StaffRoutes(db, cfg))
 		r.Mount("/salaries", SalaryRoutes(db, cfg))
 		r.Mount("/bills", BillRoutes(db))
+		r.With(middleware.RequireAuth(cfg)).Mount("/notifications", notifications.Routes(db))
 	})
 
 	return r
