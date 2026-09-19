@@ -1,27 +1,36 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { createStaff } from "../../api/staffApi.js";
 
 export default function StaffRegistrationForm() {
   const navigate = useNavigate();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
 
   async function handleSubmit(event) {
     event.preventDefault();
+    const form = event.currentTarget;
 
     const staff = {
-      name: event.currentTarget.staffName.value.trim(),
-      email: event.currentTarget.staffEmail.value.trim(),
-      phone: event.currentTarget.staffPhone.value.trim(),
-      role: event.currentTarget.staffRole.value,
-      password: event.currentTarget.staffPassword.value,
+      name: form.staffName.value.trim(),
+      email: form.staffEmail.value.trim(),
+      phone: form.staffPhone.value.trim(),
+      role: form.staffRole.value,
+      password: form.staffPassword.value,
     };
 
     setSubmitting(true);
     setError("");
+    setFieldErrors({});
     try {
-      navigate("/staff", { state: { staff: { ...staff, id: Date.now(), status: "active", joinedOn: new Date().toISOString().slice(0, 10), passwordSet: Boolean(staff.password) } } });
+      const member = await createStaff(staff);
+      navigate("/staff", { state: { staff: member } });
     } catch (submissionError) {
+      const fields = submissionError.fields;
+      if (fields) {
+        setFieldErrors(fields);
+      }
       setError(submissionError.message || "Could not register staff.");
     } finally {
       setSubmitting(false);
@@ -39,14 +48,17 @@ export default function StaffRegistrationForm() {
             <div className="col-md-6">
               <label htmlFor="staffName" className="form-label">Full Name</label>
               <input type="text" className="form-control" id="staffName" placeholder="e.g. John Doe" required />
+              {fieldErrors.name ? <div className="invalid-feedback d-block">{fieldErrors.name}</div> : null}
             </div>
             <div className="col-md-6">
               <label htmlFor="staffEmail" className="form-label">Email</label>
               <input type="email" className="form-control" id="staffEmail" placeholder="e.g. john@avinsmart.com" required />
+              {fieldErrors.email ? <div className="invalid-feedback d-block">{fieldErrors.email}</div> : null}
             </div>
             <div className="col-md-6">
               <label htmlFor="staffPhone" className="form-label">Phone</label>
               <input type="tel" className="form-control" id="staffPhone" placeholder="e.g. +1 (512) 555-0134" required />
+              {fieldErrors.phone ? <div className="invalid-feedback d-block">{fieldErrors.phone}</div> : null}
             </div>
             <div className="col-md-6">
               <label htmlFor="staffRole" className="form-label">Role</label>
@@ -57,10 +69,12 @@ export default function StaffRegistrationForm() {
                 <option value="inventory">Inventory</option>
                 <option value="support">Support</option>
               </select>
+              {fieldErrors.role ? <div className="invalid-feedback d-block">{fieldErrors.role}</div> : null}
             </div>
             <div className="col-md-6">
               <label htmlFor="staffPassword" className="form-label">Temporary password</label>
               <input type="password" className="form-control" id="staffPassword" minLength="8" required />
+              {fieldErrors.password ? <div className="invalid-feedback d-block">{fieldErrors.password}</div> : null}
             </div>
           </div>
           <div className="d-flex gap-2 mt-4">

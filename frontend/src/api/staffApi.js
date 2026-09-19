@@ -1,5 +1,10 @@
 import { API_BASE_URL, unwrap } from "./config.js";
 
+function authHeaders() {
+  const token = localStorage.getItem("token");
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 function normalize(member) {
   return {
     id: member.id,
@@ -14,7 +19,7 @@ function normalize(member) {
 
 export async function fetchStaff() {
   try {
-    const response = await fetch(`${API_BASE_URL}/staff`);
+    const response = await fetch(`${API_BASE_URL}/staff`, { headers: authHeaders() });
     const data = unwrap(await response.json().catch(() => []));
 
     if (!response.ok) {
@@ -37,19 +42,22 @@ export async function createStaff(staff) {
     password: String(staff.password || ""),
     phone: String(staff.phone || "").trim(),
     role: staff.role || "staff",
-    status: "active",
   };
 
   try {
     const response = await fetch(`${API_BASE_URL}/staff`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...authHeaders() },
       body: JSON.stringify(payload),
     });
 
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
-      throw new Error(data.error || "Could not create staff");
+      const error = new Error(data.error || "Could not create staff");
+      if (data.fields) {
+        error.fields = data.fields;
+      }
+      throw error;
     }
 
     return unwrap(data);
