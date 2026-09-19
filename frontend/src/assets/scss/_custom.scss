@@ -19,6 +19,9 @@
 	position: fixed;
 	top: 0;
 	left: 0;
+	overflow-x: hidden;
+	overflow-y: auto;
+	scrollbar-width: thin;
 	padding-top: 60px;
 	z-index: 1030;
 	.nav-link {
