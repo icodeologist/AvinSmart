@@ -1,8 +1,11 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import ApexCharts from "apexcharts";
 import PageHeader from "../components/layout/PageHeader.jsx";
 import DairyInventory from "../components/dairy/DairyInventory.jsx";
 import { salesPurchaseOptions } from "../charts/charts.js";
+import { fetchProducts, productImagePath } from "../api/productsApi.js";
+
+const LOW_STOCK_THRESHOLD = 10;
 
 function useDashboardDateTime() {
   const [now, setNow] = useState(() => new Date());
@@ -68,33 +71,40 @@ const profitCards = [
   { title: "Total Expenses", value: "$34,458", trend: "-20% vs Last Month", trendClass: "text-warning", icon: "ti ti-cash-banknote", iconClass: "text-warning" },
 ];
 
-const topSelling = [
-  { image: "./assets/images/product-2.png", name: "Wireless Earphones", price: "$89", units: "1,250 Units", badge: "18%", badgeClass: "bg-danger-subtle text-danger border-danger" },
-  { image: "./assets/images/product-1.png", name: "Gaming Joy Stick", price: "$49", units: "5,420 Units", badge: "32%", badgeClass: "bg-primary-subtle text-primary border-primary" },
-  { image: "./assets/images/product-3.png", name: "Smart Watch Pro", price: "$98", units: "862 Units", badge: "22%", badgeClass: "bg-info-subtle text-info border-info" },
-  { image: "./assets/images/product-4.png", name: "USB-C Fast Charger", price: "$35", units: "3,200 Units", badge: "28%", badgeClass: "bg-success-subtle text-success border-success" },
-  { image: "./assets/images/product-5.png", name: "Portable Bluetooth Speaker", price: "$65", units: "2,890 Units", badge: "25%", badgeClass: "bg-warning-subtle text-warning border-warning" },
-];
-
-const lowStock = [
-  { image: "./assets/images/product-8.png", name: "Wireless Headphones", id: "#554433", count: "06" },
-  { image: "./assets/images/product-4.png", name: "USB-C Cable Pack", id: "#887766", count: "09" },
-  { image: "./assets/images/product-10.png", name: "Phone Screen Protector", id: "#332211", count: "03" },
-  { image: "./assets/images/product-4.png", name: "Portable Charger 20000mAh", id: "#998877", count: "07" },
-  { image: "./assets/images/product-6.png", name: "Mechanical Keyboard RGB", id: "#665544", count: "02" },
-];
-
-const recentSales = [
-  { image: "./assets/images/product-7.png", name: "MacBook Pro 16\"", meta: "Computers • 2,$2,499", badge: "Completed", badgeClass: "bg-success-subtle text-success" },
-  { image: "./assets/images/product-9.png", name: "AirPods Pro Max", meta: "Audio • $549", badge: "Processing", badgeClass: "bg-primary-subtle text-primary" },
-  { image: "./assets/images/product-8.png", name: "iPad Air 11\"", meta: "Tablets • $799", badge: "Completed", badgeClass: "bg-success-subtle text-success" },
-  { image: "./assets/images/product-3.png", name: "Apple Watch Ultra", meta: "Wearables • $799", badge: "Pending", badgeClass: "bg-warning-subtle text-warning" },
-  { image: "./assets/images/product-6.png", name: "Magic Keyboard", meta: "Accessories • $299", badge: "Cancelled", badgeClass: "bg-danger-subtle text-danger" },
-];
-
 export default function Dashboard() {
   const { day, dateTime } = useDashboardDateTime();
   const salesChartRef = useRef(null);
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchProducts()
+      .then((data) => {
+        if (cancelled) return;
+        setProducts(data);
+      })
+      .catch((loadError) => {
+        if (cancelled) return;
+        setError(loadError.message);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const lowStock = useMemo(
+    () =>
+      products
+        .filter((product) => Number(product.quantity) <= LOW_STOCK_THRESHOLD)
+        .sort((a, b) => Number(a.quantity) - Number(b.quantity))
+        .slice(0, 5),
+    [products]
+  );
 
   useChart(salesChartRef, salesPurchaseOptions());
 
@@ -173,20 +183,7 @@ export default function Dashboard() {
               </button>
             </div>
             <ul className="list-group list-group-flush">
-              {topSelling.map((item) => (
-                <li className="list-group-item d-flex align-items-center gap-3" key={item.name}>
-                  <img src={item.image} className="rounded" width="48" alt="" />
-                  <div className="flex-grow-1">
-                    <p className="mb-1">{item.name}</p>
-                    <div className="d-flex align-items-center gap-2 text-muted">
-                      <small className="fw-semibold">{item.price}</small>
-                      <small>•</small>
-                      <small>{item.units}</small>
-                    </div>
-                  </div>
-                  <span className={`badge ${item.badgeClass} border`}>{item.badge}</span>
-                </li>
-              ))}
+              <li className="list-group-item"><p className="text-center py-4 text-secondary mb-0">No sales data yet.</p></li>
             </ul>
           </div>
         </div>
@@ -200,19 +197,25 @@ export default function Dashboard() {
               <a href="#" className="small text-primary text-decoration-underline">View All</a>
             </div>
             <ul className="list-group list-group-flush">
-              {lowStock.map((item) => (
-                <li className="list-group-item d-flex align-items-center gap-3" key={item.name}>
-                  <img src={item.image} className="rounded" width="48" alt="" />
+              {loading ? (
+                <li className="list-group-item"><p className="text-center py-4 text-secondary mb-0">Loading products...</p></li>
+              ) : error ? (
+                <li className="list-group-item"><p className="text-center py-4 text-danger mb-0">{error}</p></li>
+              ) : lowStock.length ? lowStock.map((product) => (
+                <li className="list-group-item d-flex align-items-center gap-3" key={product.id || product.sku_id}>
+                  <img src={productImagePath(product)} className="rounded" width="48" height="48" style={{ objectFit: "cover" }} alt="" onError={(event) => { event.currentTarget.src = "/assets/images/product-1.png"; }} />
                   <div className="flex-grow-1">
-                    <p className="mb-1">{item.name}</p>
-                    <small>ID: {item.id}</small>
+                    <p className="mb-1">{product.title}</p>
+                    <small>ID: {product.sku_id}</small>
                   </div>
                   <div className="d-flex flex-column gap-0 align-items-center">
-                    <span className="fw-semibold text-primary">{item.count}</span>
+                    <span className="fw-semibold text-primary">{String(product.quantity).padStart(2, "0")}</span>
                     <small className="text-muted">In Stock</small>
                   </div>
                 </li>
-              ))}
+              )) : (
+                <li className="list-group-item"><p className="text-center py-4 text-secondary mb-0">No low stock products.</p></li>
+              )}
             </ul>
           </div>
         </div>
@@ -226,18 +229,7 @@ export default function Dashboard() {
               </button>
             </div>
             <ul className="list-group list-group-flush">
-              {recentSales.map((item) => (
-                <li className="list-group-item d-flex align-items-center gap-3" key={item.name}>
-                  <img src={item.image} className="rounded" width="48" alt="" />
-                  <div className="flex-grow-1">
-                    <p className="mb-1">{item.name}</p>
-                    <div className="d-flex align-items-center gap-2 text-muted">
-                      <small className="fw-semibold">{item.meta}</small>
-                    </div>
-                  </div>
-                  <span className={`badge ${item.badgeClass}`}>{item.badge}</span>
-                </li>
-              ))}
+              <li className="list-group-item"><p className="text-center py-4 text-secondary mb-0">No sales data yet.</p></li>
             </ul>
           </div>
         </div>
