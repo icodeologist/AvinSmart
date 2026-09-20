@@ -95,10 +95,11 @@
 	min-height: 246px;
 	padding: 1.35rem;
 	border: 1px solid rgba(15, 23, 42, .08);
-	border-radius: 1.25rem;
+	border-radius: 2rem;
 	background: #fff;
 	box-shadow: 0 12px 30px rgba(15, 23, 42, .06);
 	transition: transform .2s ease, box-shadow .2s ease;
+	isolation: isolate;
 
 	&:hover {
 		transform: translateY(-3px);
