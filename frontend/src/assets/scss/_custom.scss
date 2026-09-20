@@ -212,6 +212,24 @@
 		.finance-card__footer i { color: #f59e0b; }
 	}
 }
+.finance-overview-heading {
+	display: flex;
+	align-items: flex-end;
+	justify-content: space-between;
+	gap: 1rem;
+	margin: 1.75rem 0 1rem;
+
+	h2 { margin: 0; color: $gray-900; font-size: 1.35rem; font-weight: 800; }
+	p { margin: .2rem 0 0; color: $gray-600; font-size: .82rem; }
+	&__eyebrow { color: $primary !important; font-size: .7rem !important; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+	&__control { min-width: 145px; }
+	&__control label { display: block; margin-bottom: .35rem; color: $gray-600; font-size: .72rem; font-weight: 700; }
+}
+
+@media (max-width: 575.98px) {
+	.finance-overview-heading { align-items: stretch; flex-direction: column; }
+	.finance-overview-heading__control { width: 100%; }
+}
 .sidebar.collapsed {
 	width: 60px;
 	.nav-link{
