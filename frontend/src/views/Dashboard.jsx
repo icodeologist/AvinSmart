@@ -82,9 +82,9 @@ function financeCards(period) {
   const margin = Math.round((profit / sales) * 100);
   const retailShare = Math.round((data.retailSales / sales) * 100);
   return [
-    { title: "Invested Capital", value: formatFinanceMoney(data.invested), eyebrow: "Bought price", detail: `${(data.retailUnits + data.wholesaleUnits).toLocaleString("en-IN")} products · actual stock cost`, trend: data.trend, trendClass: "finance-card__trend--warning", icon: "ti ti-package-import", accent: "expenses", progress: 100 },
-    { title: "Sales Revenue", value: formatFinanceMoney(sales), eyebrow: "Retail + wholesale sales", detail: `${formatFinanceMoney(data.retailSales)} retail · ${formatFinanceMoney(data.wholesaleSales)} wholesale`, trend: data.trend, trendClass: "finance-card__trend--positive", icon: "ti ti-cash-register", accent: "revenue", progress: retailShare, breakdown: { retailUnits: data.retailUnits, wholesaleUnits: data.wholesaleUnits } },
-    { title: "Gross Profit", value: formatFinanceMoney(profit), eyebrow: "Combined sales − bought price", detail: `${margin}% margin · ${formatFinanceMoney(profit)} earned`, trend: data.trend, trendClass: "finance-card__trend--positive", icon: "ti ti-chart-donut-4", accent: "profit", progress: margin },
+    { title: "Bought Price", value: formatFinanceMoney(data.invested), eyebrow: "Total invested", detail: `${(data.retailUnits + data.wholesaleUnits).toLocaleString("en-IN")} products · actual stock cost`, trend: data.trend, trendClass: "finance-card__trend--warning", accent: "expenses", progress: 100 },
+    { title: "Sales Revenue", value: formatFinanceMoney(sales), eyebrow: "Retail + wholesale sales", detail: `${formatFinanceMoney(data.retailSales)} retail · ${formatFinanceMoney(data.wholesaleSales)} wholesale`, trend: data.trend, trendClass: "finance-card__trend--positive", accent: "revenue", progress: retailShare, breakdown: { retailUnits: data.retailUnits, wholesaleUnits: data.wholesaleUnits } },
+    { title: "Gross Profit", value: formatFinanceMoney(profit), eyebrow: "Combined sales − bought price", detail: `${margin}% margin · ${formatFinanceMoney(profit)} earned`, trend: data.trend, trendClass: "finance-card__trend--positive", accent: "profit", progress: margin },
   ];
 }
 
@@ -165,7 +165,6 @@ export default function Dashboard() {
             <article className={`finance-card finance-card--${card.accent}`}>
               <div className="finance-card__glow"></div>
               <div className="finance-card__topline">
-                <span className="finance-card__icon"><i className={card.icon}></i></span>
                 <span className="finance-card__period">{financePeriod === "all" ? "All time" : financePeriod === "year" ? "This year" : "This month"}</span>
               </div>
               <p className="finance-card__eyebrow">{card.eyebrow}</p>
