@@ -66,9 +66,9 @@ function StatCard({ card }) {
 }
 
 const profitCards = [
-  { title: "Total Profit", value: "$25,458", trend: "+35% vs Last Month", trendClass: "text-success", icon: "ti ti-layers-subtract", iconClass: "text-primary" },
-  { title: "Total Payment Returns", value: "$45,458", trend: "-20% vs Last Month", trendClass: "text-danger", icon: "ti ti-credit-card", iconClass: "text-danger" },
-  { title: "Total Expenses", value: "$34,458", trend: "-20% vs Last Month", trendClass: "text-warning", icon: "ti ti-cash-banknote", iconClass: "text-warning" },
+  { title: "Total Profit", value: "₹25,458", eyebrow: "What you earned", detail: "Sales ₹84,600 − invested ₹59,142", trend: "+35% vs last month", trendClass: "finance-card__trend--positive", icon: "ti ti-chart-donut-4", accent: "profit", progress: 76 },
+  { title: "Payment Returns", value: "₹4,250", eyebrow: "Money returned", detail: "12 refunds · 5.0% of sales", trend: "−20% vs last month", trendClass: "finance-card__trend--negative", icon: "ti ti-arrow-back-up", accent: "returns", progress: 34 },
+  { title: "Total Expenses", value: "₹18,800", eyebrow: "Money put out", detail: "Stock ₹12,400 · running ₹6,400", trend: "+8% vs last month", trendClass: "finance-card__trend--warning", icon: "ti ti-wallet", accent: "expenses", progress: 58 },
 ];
 
 export default function Dashboard() {
@@ -128,23 +128,28 @@ export default function Dashboard() {
       <div className="row g-3 mb-3">
         {profitCards.map((card) => (
           <div className="col-lg-4 col-12" key={card.title}>
-            <div className="card">
-              <div className="card-body p-4">
-                <div className="d-flex justify-content-between border-bottom pb-5 mb-3">
-                  <div>
-                    <h3 className="fw-bold h4">{card.value}</h3>
-                    <span>{card.title}</span>
-                  </div>
-                  <div>
-                    <i className={`${card.icon} fs-1 ${card.iconClass}`}></i>
-                  </div>
-                </div>
-                <div className="d-flex justify-content-between align-items-center small">
-                  <div className="text-muted"><span className={card.trendClass}>{card.trend}</span> vs Last Month</div>
-                  <div><a href="#" className="link-primary text-decoration-underline">View</a></div>
-                </div>
+            <article className={`finance-card finance-card--${card.accent}`}>
+              <div className="finance-card__glow"></div>
+              <div className="finance-card__topline">
+                <span className="finance-card__icon"><i className={card.icon}></i></span>
+                <span className="finance-card__period">This month</span>
               </div>
-            </div>
+              <p className="finance-card__eyebrow">{card.eyebrow}</p>
+              <div className="d-flex align-items-end justify-content-between gap-2">
+                <div>
+                  <h3 className="finance-card__value">{card.value}</h3>
+                  <p className="finance-card__title">{card.title}</p>
+                </div>
+                <span className={`finance-card__trend ${card.trendClass}`}>{card.trend}</span>
+              </div>
+              <div className="finance-card__progress" aria-label={`${card.title} progress`}>
+                <span style={{ width: `${card.progress}%` }}></span>
+              </div>
+              <div className="finance-card__footer">
+                <span>{card.detail}</span>
+                <i className="ti ti-arrow-up-right"></i>
+              </div>
+            </article>
           </div>
         ))}
       </div>
