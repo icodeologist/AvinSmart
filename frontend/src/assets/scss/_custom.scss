@@ -155,7 +155,7 @@
 	&__value {
 		margin: 0;
 		color: $gray-900;
-		font-size: clamp(1.65rem, 3vw, 2.15rem);
+		font-size: clamp(1.4rem, 2.5vw, 1.8rem);
 		font-weight: 800;
 		letter-spacing: -.05em;
 	}
@@ -195,9 +195,19 @@
 	&__footer {
 		gap: .75rem;
 		line-height: 1.35;
+		font-weight: 700;
 
 		i { font-size: 1.05rem; }
 	}
+
+	&__breakdown { margin: 1.25rem 0 .95rem; }
+	&__breakdown-bar { display: flex; height: .55rem; overflow: hidden; border-radius: 999px; background: #e2e8f0; }
+	&__breakdown-bar span:first-child { background: #2563eb; }
+	&__breakdown-bar span:last-child { background: #93c5fd; }
+	&__breakdown-labels { display: flex; justify-content: space-between; gap: .5rem; margin-top: .55rem; color: $gray-600; font-size: .67rem; font-weight: 700; }
+	&__breakdown-labels span { white-space: nowrap; }
+	&__breakdown-labels i { display: inline-block; width: .45rem; height: .45rem; margin-right: .25rem; border-radius: 50%; background: #2563eb; }
+	&__breakdown-labels span:last-child i { background: #93c5fd; }
 
 	&--profit {
 		.finance-card__glow, .finance-card__icon, .finance-card__progress span { background: #16a34a; }
@@ -228,39 +238,11 @@
 	&__eyebrow { color: $primary !important; font-size: .7rem !important; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
 	&__control { min-width: 145px; }
 	&__control label { display: block; margin-bottom: .35rem; color: $gray-600; font-size: .72rem; font-weight: 700; }
-	&__controls { display: flex; align-items: flex-end; gap: .75rem; }
-}
-
-.finance-price-tabs {
-	display: flex;
-	padding: .2rem;
-	background: #f1f5f9;
-	border-radius: .55rem;
-
-	button {
-		padding: .45rem .7rem;
-		border: 0;
-		border-radius: .4rem;
-		background: transparent;
-		color: $gray-600;
-		font-size: .74rem;
-		font-weight: 700;
-		transition: .2s ease;
-
-		&.active {
-			background: #fff;
-			color: $primary;
-			box-shadow: 0 2px 6px rgba(15, 23, 42, .1);
-		}
-	}
 }
 
 @media (max-width: 575.98px) {
 	.finance-overview-heading { align-items: stretch; flex-direction: column; }
-	.finance-overview-heading__controls { align-items: stretch; flex-direction: column; }
 	.finance-overview-heading__control { width: 100%; }
-	.finance-price-tabs { width: 100%; }
-	.finance-price-tabs button { flex: 1; }
 }
 .sidebar.collapsed {
 	width: 60px;

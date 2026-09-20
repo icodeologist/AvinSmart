@@ -66,25 +66,25 @@ function StatCard({ card }) {
 }
 
 const financeDataByPeriod = {
-  month: { invested: 59142, retailSales: 84600, wholesaleSales: 74250, trend: "+35% vs last month", units: 200 },
-  year: { invested: 760000, retailSales: 1078450, wholesaleSales: 952000, trend: "+18% vs last year", units: 2480 },
-  all: { invested: 4300000, retailSales: 6142500, wholesaleSales: 5525000, trend: "Since launch", units: 13840 },
+  month: { invested: 60000, retailSales: 52000, wholesaleSales: 28000, trend: "+35% vs last month", retailUnits: 130, wholesaleUnits: 70 },
+  year: { invested: 760000, retailSales: 690000, wholesaleSales: 388450, trend: "+18% vs last year", retailUnits: 1580, wholesaleUnits: 900 },
+  all: { invested: 4300000, retailSales: 3900000, wholesaleSales: 2242500, trend: "Since launch", retailUnits: 8840, wholesaleUnits: 5000 },
 };
 
 function formatFinanceMoney(value) {
   return `₹${Number(value).toLocaleString("en-IN")}`;
 }
 
-function financeCards(period, priceMode) {
+function financeCards(period) {
   const data = financeDataByPeriod[period];
-  const sales = priceMode === "retail" ? data.retailSales : data.wholesaleSales;
+  const sales = data.retailSales + data.wholesaleSales;
   const profit = sales - data.invested;
   const margin = Math.round((profit / sales) * 100);
-  const priceLabel = priceMode === "retail" ? "Retail price" : "Wholesale price";
+  const retailShare = Math.round((data.retailSales / sales) * 100);
   return [
-    { title: "Invested Capital", value: formatFinanceMoney(data.invested), eyebrow: "Bought price", detail: `${data.units.toLocaleString("en-IN")} products · actual stock cost`, trend: data.trend, trendClass: "finance-card__trend--warning", icon: "ti ti-package-import", accent: "expenses", progress: 100 },
-    { title: "Sales Revenue", value: formatFinanceMoney(sales), eyebrow: `Sold at ${priceLabel.toLowerCase()}`, detail: `${priceLabel} revenue before returns`, trend: data.trend, trendClass: "finance-card__trend--positive", icon: "ti ti-cash-register", accent: "revenue", progress: Math.min(100, Math.round((sales / data.retailSales) * 100)) },
-    { title: "Gross Profit", value: formatFinanceMoney(profit), eyebrow: `${priceLabel} − bought price`, detail: `${margin}% margin · ${formatFinanceMoney(profit)} earned`, trend: data.trend, trendClass: "finance-card__trend--positive", icon: "ti ti-chart-donut-4", accent: "profit", progress: margin },
+    { title: "Invested Capital", value: formatFinanceMoney(data.invested), eyebrow: "Bought price", detail: `${(data.retailUnits + data.wholesaleUnits).toLocaleString("en-IN")} products · actual stock cost`, trend: data.trend, trendClass: "finance-card__trend--warning", icon: "ti ti-package-import", accent: "expenses", progress: 100 },
+    { title: "Sales Revenue", value: formatFinanceMoney(sales), eyebrow: "Retail + wholesale sales", detail: `${formatFinanceMoney(data.retailSales)} retail · ${formatFinanceMoney(data.wholesaleSales)} wholesale`, trend: data.trend, trendClass: "finance-card__trend--positive", icon: "ti ti-cash-register", accent: "revenue", progress: retailShare, breakdown: { retailUnits: data.retailUnits, wholesaleUnits: data.wholesaleUnits } },
+    { title: "Gross Profit", value: formatFinanceMoney(profit), eyebrow: "Combined sales − bought price", detail: `${margin}% margin · ${formatFinanceMoney(profit)} earned`, trend: data.trend, trendClass: "finance-card__trend--positive", icon: "ti ti-chart-donut-4", accent: "profit", progress: margin },
   ];
 }
 
@@ -93,7 +93,6 @@ export default function Dashboard() {
   const salesChartRef = useRef(null);
   const [products, setProducts] = useState([]);
   const [financePeriod, setFinancePeriod] = useState("month");
-  const [priceMode, setPriceMode] = useState("retail");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -150,24 +149,18 @@ export default function Dashboard() {
           <h2>Investment to profit</h2>
           <p>Compare bought cost against your selected selling price.</p>
         </div>
-        <div className="finance-overview-heading__controls">
-          <div className="finance-overview-heading__control">
-            <label htmlFor="financePeriod">View period</label>
-            <select id="financePeriod" className="form-select form-select-sm" value={financePeriod} onChange={(event) => setFinancePeriod(event.target.value)}>
-              <option value="month">This month</option>
-              <option value="year">This year</option>
-              <option value="all">All time</option>
-            </select>
-          </div>
-          <div className="finance-price-tabs" role="tablist" aria-label="Selling price comparison">
-            <button type="button" className={priceMode === "retail" ? "active" : ""} onClick={() => setPriceMode("retail")}>Retail</button>
-            <button type="button" className={priceMode === "wholesale" ? "active" : ""} onClick={() => setPriceMode("wholesale")}>Wholesale</button>
-          </div>
+        <div className="finance-overview-heading__control">
+          <label htmlFor="financePeriod">View period</label>
+          <select id="financePeriod" className="form-select form-select-sm" value={financePeriod} onChange={(event) => setFinancePeriod(event.target.value)}>
+            <option value="month">This month</option>
+            <option value="year">This year</option>
+            <option value="all">All time</option>
+          </select>
         </div>
       </div>
 
       <div className="row g-3 mb-3">
-        {financeCards(financePeriod, priceMode).map((card) => (
+        {financeCards(financePeriod).map((card) => (
           <div className="col-lg-4 col-12" key={card.title}>
             <article className={`finance-card finance-card--${card.accent}`}>
               <div className="finance-card__glow"></div>
@@ -183,9 +176,12 @@ export default function Dashboard() {
                 </div>
                 <span className={`finance-card__trend ${card.trendClass}`}>{card.trend}</span>
               </div>
-              <div className="finance-card__progress" aria-label={`${card.title} progress`}>
-                <span style={{ width: `${card.progress}%` }}></span>
-              </div>
+              {card.breakdown ? (
+                <div className="finance-card__breakdown" aria-label="Retail and wholesale sales comparison">
+                  <div className="finance-card__breakdown-bar"><span style={{ width: `${card.progress}%` }}></span><span style={{ width: `${100 - card.progress}%` }}></span></div>
+                  <div className="finance-card__breakdown-labels"><span><i></i>Retail · {card.breakdown.retailUnits} products</span><span><i></i>Wholesale · {card.breakdown.wholesaleUnits} products</span></div>
+                </div>
+              ) : <div className="finance-card__progress" aria-label={`${card.title} progress`}><span style={{ width: `${card.progress}%` }}></span></div>}
               <div className="finance-card__footer">
                 <span>{card.detail}</span>
                 <i className="ti ti-arrow-up-right"></i>
