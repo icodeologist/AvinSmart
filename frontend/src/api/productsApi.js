@@ -53,7 +53,8 @@ export async function createProduct(formData) {
   try {
     const response = await fetch(`${API_BASE_URL}/products`, {
       method: "POST",
-      body: formData,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(formData),
     });
 
     const data = unwrap(await response.json().catch(() => ({})));

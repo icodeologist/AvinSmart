@@ -1,13 +1,15 @@
 import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import PageHeader from "../components/layout/PageHeader.jsx";
+import { createCategory } from "../api/categoriesApi.js";
 
 export default function AddCategory() {
   const formRef = useRef(null);
   const [validated, setValidated] = useState(false);
-  const [success, setSuccess] = useState(false);
+  const [alert, setAlert] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault();
     const form = formRef.current;
     if (!form.checkValidity()) {
@@ -15,9 +17,17 @@ export default function AddCategory() {
       return;
     }
     setValidated(false);
-    setSuccess(true);
-    form.reset();
-    setTimeout(() => setSuccess(false), 3000);
+    setSubmitting(true);
+    setAlert(null);
+    try {
+      await createCategory({ name: form.categoryName.value, type: form.categoryType.value });
+      setAlert({ type: "success", message: "Category added successfully!" });
+      form.reset();
+    } catch (error) {
+      setAlert({ type: "danger", message: error.message });
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -32,11 +42,7 @@ export default function AddCategory() {
         <div className="col-12">
           <div className="card">
             <div className="card-body p-4">
-              {success ? (
-                <div className="alert alert-success py-2" role="alert">
-                  <i className="ti ti-circle-check me-1"></i> Category added successfully!
-                </div>
-              ) : null}
+              {alert ? <div className={`alert alert-${alert.type} py-2`} role="alert">{alert.message}</div> : null}
               <form id="addCategoryForm" ref={formRef} noValidate className={validated ? "was-validated" : ""} onSubmit={handleSubmit}>
                 <div className="row">
                   <div className="col-md-6 mb-3">
@@ -54,7 +60,7 @@ export default function AddCategory() {
                   </div>
                 </div>
                 <div className="d-flex gap-2">
-                  <button type="submit" className="btn btn-primary">Add Category</button>
+                  <button type="submit" className="btn btn-primary" disabled={submitting}>{submitting ? "Saving..." : "Add Category"}</button>
                   <button type="reset" className="btn btn-secondary">Clear</button>
                 </div>
               </form>

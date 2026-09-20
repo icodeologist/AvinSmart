@@ -1,25 +1,49 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import PageHeader from "../components/layout/PageHeader.jsx";
 import { createProduct, subCategoriesByCategory } from "../api/productsApi.js";
+import { fetchCategories } from "../api/categoriesApi.js";
 
 function productImagesByCategory(category) {
   return subCategoriesByCategory[category] || [];
+}
+
+function readFileAsDataURI(file) {
+  return new Promise((resolve, reject) => {
+    if (!file) {
+      resolve("");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error("Could not read product image"));
+    reader.readAsDataURL(file);
+  });
 }
 
 export default function CreateProduct() {
   const formRef = useRef(null);
   const [validated, setValidated] = useState(false);
   const [category, setCategory] = useState("");
+  const [categories, setCategories] = useState([]);
   const [subCategories, setSubCategories] = useState([]);
   const [subCategory, setSubCategory] = useState("");
   const [alert, setAlert] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
+  useEffect(() => {
+    let cancelled = false;
+    fetchCategories()
+      .then((data) => { if (!cancelled) setCategories(data); })
+      .catch((error) => { if (!cancelled) setAlert({ type: "danger", message: error.message }); });
+    return () => { cancelled = true; };
+  }, []);
+
   function handleCategoryChange(event) {
     const value = event.target.value;
     setCategory(value);
-    setSubCategories(productImagesByCategory(value));
+    const selectedCategory = categories.find((item) => item.name === value);
+    setSubCategories(selectedCategory ? selectedCategory.subCategories : productImagesByCategory(value).map((name) => ({ name })));
     setSubCategory("");
   }
 
@@ -37,23 +61,20 @@ export default function CreateProduct() {
     setAlert(null);
 
     try {
-      const formData = new FormData();
-      formData.append("title", form.productName.value);
-      formData.append("sku_id", form.productSKU.value);
-      formData.append("quantity", form.productStock.value);
-      formData.append("category_name", category);
-      formData.append("sub_category_name", subCategory);
-      formData.append("description", form.productDescription.value);
-      formData.append("unit", form.productUnit.value);
-      formData.append("retail_price", form.productPrice.value);
-      formData.append("customer_display_price", form.productCustomerDisplayPrice.value);
-      formData.append("bought_price", form.productBoughtPrice.value);
-      formData.append("whole_sale_price", form.productWholeSalePrice.value);
-      if (imageInput.files[0]) {
-        formData.append("image", imageInput.files[0]);
-      }
-
-      await createProduct(formData);
+      await createProduct({
+        title: form.productName.value,
+        sku_id: form.productSKU.value,
+        quantity: Number(form.productStock.value),
+        category_name: category,
+        sub_category_name: subCategory,
+        description: form.productDescription.value,
+        unit: form.productUnit.value,
+        retail_price: Number(form.productPrice.value),
+        customer_display_price: Number(form.productCustomerDisplayPrice.value),
+        bought_price: Number(form.productBoughtPrice.value),
+        whole_sale_price: Number(form.productWholeSalePrice.value),
+        image_base64: await readFileAsDataURI(imageInput.files[0]),
+      });
 
       setAlert({ type: "success", message: "Product created successfully." });
       form.reset();
@@ -130,9 +151,7 @@ export default function CreateProduct() {
                   <label htmlFor="productCategory" className="form-label">Category</label>
                   <select className="form-select" id="productCategory" name="productCategory" required value={category} onChange={handleCategoryChange}>
                     <option value="">Select category</option>
-                    <option value="electronics">Electronics</option>
-                    <option value="clothing">Clothing</option>
-                    <option value="food">Food</option>
+                    {categories.map((item) => <option value={item.name} key={item.id}>{item.name}</option>)}
                   </select>
                 </div>
                 <div className="mb-3">
@@ -140,7 +159,7 @@ export default function CreateProduct() {
                   <select className="form-select" id="productSubCategory" name="productSubCategory" required value={subCategory} onChange={(event) => setSubCategory(event.target.value)}>
                     <option value="">Select subcategory</option>
                     {subCategories.map((sub) => (
-                      <option value={sub} key={sub}>{sub}</option>
+                      <option value={sub.name} key={sub.id || sub.name}>{sub.name}</option>
                     ))}
                   </select>
                 </div>

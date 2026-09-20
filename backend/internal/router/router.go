@@ -28,6 +28,7 @@ func New(db *gorm.DB, cfg config.Config) http.Handler {
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Mount("/auth", AuthRoutes(db, cfg))
 		r.Mount("/products", ProductRoutes(db))
+		r.Mount("/categories", CategoryRoutes(db, cfg))
 		r.Mount("/outlets", OutletRoutes(db))
 		r.Mount("/staff", StaffRoutes(db, cfg))
 		r.Mount("/salaries", SalaryRoutes(db, cfg))
