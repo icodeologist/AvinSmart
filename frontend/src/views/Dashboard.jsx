@@ -75,17 +75,55 @@ function formatFinanceMoney(value) {
   return `₹${Number(value).toLocaleString("en-IN")}`;
 }
 
-function financeCards(period) {
+function InvestmentSpeedometer({ period }) {
   const data = financeDataByPeriod[period];
   const sales = data.retailSales + data.wholesaleSales;
-  const profit = sales - data.invested;
-  const margin = Math.round((profit / sales) * 100);
+  const gain = sales - data.invested;
+  const recovery = sales / data.invested;
+  const score = Math.min(100, Math.max(0, recovery * 50));
+  const angle = (180 - (score * 180) / 100) * (Math.PI / 180);
+  const needleX = 130 + Math.cos(angle) * 88;
+  const needleY = 140 - Math.sin(angle) * 88;
   const retailShare = Math.round((data.retailSales / sales) * 100);
-  return [
-    { title: "Bought Price", value: formatFinanceMoney(data.invested), eyebrow: "Total invested", detail: `${(data.retailUnits + data.wholesaleUnits).toLocaleString("en-IN")} products · actual stock cost`, trend: data.trend, trendClass: "finance-card__trend--warning", accent: "expenses", progress: 100 },
-    { title: "Sales Revenue", value: formatFinanceMoney(sales), eyebrow: "Retail + wholesale sales", detail: `${formatFinanceMoney(data.retailSales)} retail · ${formatFinanceMoney(data.wholesaleSales)} wholesale`, trend: data.trend, trendClass: "finance-card__trend--positive", accent: "revenue", progress: retailShare, breakdown: { retailUnits: data.retailUnits, wholesaleUnits: data.wholesaleUnits } },
-    { title: "Gross Profit", value: formatFinanceMoney(profit), eyebrow: "Combined sales − bought price", detail: `${margin}% margin · ${formatFinanceMoney(profit)} earned`, trend: data.trend, trendClass: "finance-card__trend--positive", accent: "profit", progress: margin },
-  ];
+  const gaining = gain >= 0;
+
+  return (
+    <article className="speedometer-card">
+      <div className="speedometer-card__header">
+        <div>
+          <p className="speedometer-card__eyebrow">Investment return meter</p>
+          <h3>How far has the money come back?</h3>
+          <p>Break-even is at the middle. Crossing it means the business is gaining.</p>
+        </div>
+        <span className={`speedometer-card__status ${gaining ? "is-positive" : "is-negative"}`}>
+          <i className={gaining ? "ti ti-trending-up" : "ti ti-trending-down"}></i>
+          {gaining ? "Gaining" : "Recovering"}
+        </span>
+      </div>
+
+      <div className="speedometer-card__body">
+        <div className="speedometer-gauge">
+          <svg viewBox="0 0 260 175" role="img" aria-label={`Investment return is ${Math.round(score)} percent`}>
+            <path className="speedometer-gauge__track" d="M 20 140 A 110 110 0 0 1 240 140" />
+            <path className={`speedometer-gauge__value ${gaining ? "is-positive" : "is-negative"}`} d="M 20 140 A 110 110 0 0 1 240 140" pathLength="100" strokeDasharray={`${score} 100`} />
+            <line className="speedometer-gauge__break-even" x1="130" y1="28" x2="130" y2="43" />
+            <line className={`speedometer-gauge__needle ${gaining ? "is-positive" : "is-negative"}`} x1="130" y1="140" x2={needleX} y2={needleY} />
+            <circle className="speedometer-gauge__hub" cx="130" cy="140" r="8" />
+            <text x="16" y="163">0%</text><text x="112" y="25">50%</text><text x="220" y="163">100%</text>
+          </svg>
+          <strong className="speedometer-gauge__score">{Math.round(score)}%</strong>
+          <span className="speedometer-gauge__caption">money recovered</span>
+        </div>
+
+        <div className="speedometer-summary">
+          <div className="speedometer-summary__item"><span>Bought price</span><strong>{formatFinanceMoney(data.invested)}</strong><small>{(data.retailUnits + data.wholesaleUnits).toLocaleString("en-IN")} products invested</small></div>
+          <div className="speedometer-summary__item"><span>Total sales</span><strong>{formatFinanceMoney(sales)}</strong><small>{formatFinanceMoney(data.retailSales)} retail · {formatFinanceMoney(data.wholesaleSales)} wholesale</small></div>
+          <div className={`speedometer-summary__gain ${gaining ? "is-positive" : "is-negative"}`}><span>{gaining ? "Gross gain" : "Amount to break even"}</span><strong>{formatFinanceMoney(Math.abs(gain))}</strong><small>{gaining ? "above bought price" : "still to recover"}</small></div>
+          <div className="speedometer-mix"><div className="speedometer-mix__bar"><span style={{ width: `${retailShare}%` }}></span><span style={{ width: `${100 - retailShare}%` }}></span></div><div><span><i></i>Retail {retailShare}%</span><span><i></i>Wholesale {100 - retailShare}%</span></div></div>
+        </div>
+      </div>
+    </article>
+  );
 }
 
 export default function Dashboard() {
@@ -159,36 +197,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="row g-3 mb-3">
-        {financeCards(financePeriod).map((card) => (
-          <div className="col-lg-4 col-12" key={card.title}>
-            <article className={`finance-card finance-card--${card.accent}`}>
-              <div className="finance-card__glow"></div>
-              <div className="finance-card__topline">
-                <span className="finance-card__period">{financePeriod === "all" ? "All time" : financePeriod === "year" ? "This year" : "This month"}</span>
-              </div>
-              <p className="finance-card__eyebrow">{card.eyebrow}</p>
-              <div className="d-flex align-items-end justify-content-between gap-2">
-                <div>
-                  <h3 className="finance-card__value">{card.value}</h3>
-                  <p className="finance-card__title">{card.title}</p>
-                </div>
-                <span className={`finance-card__trend ${card.trendClass}`}>{card.trend}</span>
-              </div>
-              {card.breakdown ? (
-                <div className="finance-card__breakdown" aria-label="Retail and wholesale sales comparison">
-                  <div className="finance-card__breakdown-bar"><span style={{ width: `${card.progress}%` }}></span><span style={{ width: `${100 - card.progress}%` }}></span></div>
-                  <div className="finance-card__breakdown-labels"><span><i></i>Retail · {card.breakdown.retailUnits} products</span><span><i></i>Wholesale · {card.breakdown.wholesaleUnits} products</span></div>
-                </div>
-              ) : <div className="finance-card__progress" aria-label={`${card.title} progress`}><span style={{ width: `${card.progress}%` }}></span></div>}
-              <div className="finance-card__footer">
-                <span>{card.detail}</span>
-                <i className="ti ti-arrow-up-right"></i>
-              </div>
-            </article>
-          </div>
-        ))}
-      </div>
+      <div className="row g-3 mb-3"><div className="col-12"><InvestmentSpeedometer period={financePeriod} /></div></div>
 
       <div className="row g-3 mb-3">
         <div className="col-12 col-lg-6">
