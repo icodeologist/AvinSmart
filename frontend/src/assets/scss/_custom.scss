@@ -211,6 +211,10 @@
 		.finance-card__glow, .finance-card__icon, .finance-card__progress span { background: #f59e0b; }
 		.finance-card__footer i { color: #f59e0b; }
 	}
+	&--revenue {
+		.finance-card__glow, .finance-card__icon, .finance-card__progress span { background: #2563eb; }
+		.finance-card__footer i { color: #2563eb; }
+	}
 }
 .finance-overview-heading {
 	display: flex;
@@ -224,11 +228,39 @@
 	&__eyebrow { color: $primary !important; font-size: .7rem !important; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
 	&__control { min-width: 145px; }
 	&__control label { display: block; margin-bottom: .35rem; color: $gray-600; font-size: .72rem; font-weight: 700; }
+	&__controls { display: flex; align-items: flex-end; gap: .75rem; }
+}
+
+.finance-price-tabs {
+	display: flex;
+	padding: .2rem;
+	background: #f1f5f9;
+	border-radius: .55rem;
+
+	button {
+		padding: .45rem .7rem;
+		border: 0;
+		border-radius: .4rem;
+		background: transparent;
+		color: $gray-600;
+		font-size: .74rem;
+		font-weight: 700;
+		transition: .2s ease;
+
+		&.active {
+			background: #fff;
+			color: $primary;
+			box-shadow: 0 2px 6px rgba(15, 23, 42, .1);
+		}
+	}
 }
 
 @media (max-width: 575.98px) {
 	.finance-overview-heading { align-items: stretch; flex-direction: column; }
+	.finance-overview-heading__controls { align-items: stretch; flex-direction: column; }
 	.finance-overview-heading__control { width: 100%; }
+	.finance-price-tabs { width: 100%; }
+	.finance-price-tabs button { flex: 1; }
 }
 .sidebar.collapsed {
 	width: 60px;

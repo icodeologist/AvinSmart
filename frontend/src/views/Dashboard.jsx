@@ -65,29 +65,35 @@ function StatCard({ card }) {
   );
 }
 
-const profitCardsByPeriod = {
-  month: [
-    { title: "Total Profit", value: "₹25,458", eyebrow: "What you earned", detail: "Sales ₹84,600 − invested ₹59,142", trend: "+35% vs last month", trendClass: "finance-card__trend--positive", icon: "ti ti-chart-donut-4", accent: "profit", progress: 76 },
-    { title: "Payment Returns", value: "₹4,250", eyebrow: "Money returned", detail: "12 refunds · 5.0% of sales", trend: "−20% vs last month", trendClass: "finance-card__trend--negative", icon: "ti ti-arrow-back-up", accent: "returns", progress: 34 },
-    { title: "Total Expenses", value: "₹18,800", eyebrow: "Money put out", detail: "Stock ₹12,400 · running ₹6,400", trend: "+8% vs last month", trendClass: "finance-card__trend--warning", icon: "ti ti-wallet", accent: "expenses", progress: 58 },
-  ],
-  year: [
-    { title: "Total Profit", value: "₹3,18,450", eyebrow: "What you earned", detail: "Sales ₹10.8L − invested ₹7.6L", trend: "+18% vs last year", trendClass: "finance-card__trend--positive", icon: "ti ti-chart-donut-4", accent: "profit", progress: 82 },
-    { title: "Payment Returns", value: "₹28,600", eyebrow: "Money returned", detail: "86 refunds · 2.6% of sales", trend: "−12% vs last year", trendClass: "finance-card__trend--negative", icon: "ti ti-arrow-back-up", accent: "returns", progress: 22 },
-    { title: "Total Expenses", value: "₹2,24,900", eyebrow: "Money put out", detail: "Stock ₹1.5L · running ₹74,900", trend: "+11% vs last year", trendClass: "finance-card__trend--warning", icon: "ti ti-wallet", accent: "expenses", progress: 64 },
-  ],
-  all: [
-    { title: "Total Profit", value: "₹18,42,500", eyebrow: "What you earned", detail: "Sales ₹61.4L − invested ₹43L", trend: "Since launch", trendClass: "finance-card__trend--positive", icon: "ti ti-chart-donut-4", accent: "profit", progress: 88 },
-    { title: "Payment Returns", value: "₹1,46,800", eyebrow: "Money returned", detail: "412 refunds · 2.4% of sales", trend: "Since launch", trendClass: "finance-card__trend--negative", icon: "ti ti-arrow-back-up", accent: "returns", progress: 18 },
-    { title: "Total Expenses", value: "₹12,94,700", eyebrow: "Money put out", detail: "Stock ₹8.6L · running ₹4.3L", trend: "Since launch", trendClass: "finance-card__trend--warning", icon: "ti ti-wallet", accent: "expenses", progress: 71 },
-  ],
+const financeDataByPeriod = {
+  month: { invested: 59142, retailSales: 84600, wholesaleSales: 74250, trend: "+35% vs last month", units: 200 },
+  year: { invested: 760000, retailSales: 1078450, wholesaleSales: 952000, trend: "+18% vs last year", units: 2480 },
+  all: { invested: 4300000, retailSales: 6142500, wholesaleSales: 5525000, trend: "Since launch", units: 13840 },
 };
+
+function formatFinanceMoney(value) {
+  return `₹${Number(value).toLocaleString("en-IN")}`;
+}
+
+function financeCards(period, priceMode) {
+  const data = financeDataByPeriod[period];
+  const sales = priceMode === "retail" ? data.retailSales : data.wholesaleSales;
+  const profit = sales - data.invested;
+  const margin = Math.round((profit / sales) * 100);
+  const priceLabel = priceMode === "retail" ? "Retail price" : "Wholesale price";
+  return [
+    { title: "Invested Capital", value: formatFinanceMoney(data.invested), eyebrow: "Bought price", detail: `${data.units.toLocaleString("en-IN")} products · actual stock cost`, trend: data.trend, trendClass: "finance-card__trend--warning", icon: "ti ti-package-import", accent: "expenses", progress: 100 },
+    { title: "Sales Revenue", value: formatFinanceMoney(sales), eyebrow: `Sold at ${priceLabel.toLowerCase()}`, detail: `${priceLabel} revenue before returns`, trend: data.trend, trendClass: "finance-card__trend--positive", icon: "ti ti-cash-register", accent: "revenue", progress: Math.min(100, Math.round((sales / data.retailSales) * 100)) },
+    { title: "Gross Profit", value: formatFinanceMoney(profit), eyebrow: `${priceLabel} − bought price`, detail: `${margin}% margin · ${formatFinanceMoney(profit)} earned`, trend: data.trend, trendClass: "finance-card__trend--positive", icon: "ti ti-chart-donut-4", accent: "profit", progress: margin },
+  ];
+}
 
 export default function Dashboard() {
   const { day, dateTime } = useDashboardDateTime();
   const salesChartRef = useRef(null);
   const [products, setProducts] = useState([]);
   const [financePeriod, setFinancePeriod] = useState("month");
+  const [priceMode, setPriceMode] = useState("retail");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -141,27 +147,33 @@ export default function Dashboard() {
       <div className="finance-overview-heading">
         <div>
           <p className="finance-overview-heading__eyebrow">Business pulse</p>
-          <h2>Money in, money out</h2>
-          <p>Mock financial overview until live cash-flow data is connected.</p>
+          <h2>Investment to profit</h2>
+          <p>Compare bought cost against your selected selling price.</p>
         </div>
-        <div className="finance-overview-heading__control">
-          <label htmlFor="financePeriod">View period</label>
-          <select id="financePeriod" className="form-select form-select-sm" value={financePeriod} onChange={(event) => setFinancePeriod(event.target.value)}>
-            <option value="month">This month</option>
-            <option value="year">This year</option>
-            <option value="all">All time</option>
-          </select>
+        <div className="finance-overview-heading__controls">
+          <div className="finance-overview-heading__control">
+            <label htmlFor="financePeriod">View period</label>
+            <select id="financePeriod" className="form-select form-select-sm" value={financePeriod} onChange={(event) => setFinancePeriod(event.target.value)}>
+              <option value="month">This month</option>
+              <option value="year">This year</option>
+              <option value="all">All time</option>
+            </select>
+          </div>
+          <div className="finance-price-tabs" role="tablist" aria-label="Selling price comparison">
+            <button type="button" className={priceMode === "retail" ? "active" : ""} onClick={() => setPriceMode("retail")}>Retail</button>
+            <button type="button" className={priceMode === "wholesale" ? "active" : ""} onClick={() => setPriceMode("wholesale")}>Wholesale</button>
+          </div>
         </div>
       </div>
 
       <div className="row g-3 mb-3">
-        {profitCardsByPeriod[financePeriod].map((card) => (
+        {financeCards(financePeriod, priceMode).map((card) => (
           <div className="col-lg-4 col-12" key={card.title}>
             <article className={`finance-card finance-card--${card.accent}`}>
               <div className="finance-card__glow"></div>
               <div className="finance-card__topline">
                 <span className="finance-card__icon"><i className={card.icon}></i></span>
-                <span className="finance-card__period">This month</span>
+                <span className="finance-card__period">{financePeriod === "all" ? "All time" : financePeriod === "year" ? "This year" : "This month"}</span>
               </div>
               <p className="finance-card__eyebrow">{card.eyebrow}</p>
               <div className="d-flex align-items-end justify-content-between gap-2">
