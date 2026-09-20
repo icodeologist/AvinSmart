@@ -95,7 +95,7 @@
 	min-height: 246px;
 	padding: 1.35rem;
 	border: 1px solid rgba(15, 23, 42, .08);
-	border-radius: 999px;
+	border-radius: 1rem;
 	background: #fff;
 	box-shadow: 0 12px 30px rgba(15, 23, 42, .06);
 	transition: transform .2s ease, box-shadow .2s ease;
@@ -144,8 +144,13 @@
 	}
 
 	&__value {
+		display: inline-block;
 		margin: 0;
+		padding: .2rem .75rem;
 		color: $gray-900;
+		background: #f1f3f5;
+		border: 1px solid #e5e7eb;
+		border-radius: 999px;
 		font-size: clamp(1.5rem, 2.5vw, 1.9rem);
 		font-weight: 800;
 		letter-spacing: -.05em;
