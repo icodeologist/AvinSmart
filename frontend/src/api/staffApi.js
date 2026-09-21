@@ -42,6 +42,21 @@ export async function fetchStaff() {
   }
 }
 
+export async function loginStaff(email, password) {
+  const response = await fetch(`${API_BASE_URL}/staff/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: String(email || "").trim(), password: String(password || "") }),
+  });
+
+  try {
+    return await parseResponse(response, "Could not login staff");
+  } catch (error) {
+    if (error.name === "TypeError") throw new Error(`Could not login staff: ${error.message}`);
+    throw error;
+  }
+}
+
 export async function createStaff(staff) {
   const payload = {
     name: String(staff.name || "").trim(),

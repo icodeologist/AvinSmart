@@ -41,7 +41,7 @@ export default function PosPage() {
     setNotice(`Payment recorded for ${money(total)} (demo only).`);
     setCart([]); setPriceTier("original");
   }
-  function logout() { sessionStorage.removeItem("avinSmartPosStaff"); navigate("/pos/login"); }
+  function logout() { sessionStorage.removeItem("avinSmartPosStaff"); localStorage.removeItem("token"); navigate("/pos/login"); }
 
   if (!staff) return <Navigate to="/pos/login" replace />;
 
