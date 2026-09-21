@@ -1,5 +1,10 @@
 import { API_BASE_URL, unwrap } from "./config.js";
 
+function authHeaders() {
+  const token = localStorage.getItem("token");
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 function normalizeOutlet(outlet) {
   return {
     name: outlet.name,
@@ -15,7 +20,7 @@ function normalizeOutlet(outlet) {
 
 export async function fetchOutlets() {
   try {
-    const response = await fetch(`${API_BASE_URL}/outlets`);
+    const response = await fetch(`${API_BASE_URL}/outlets`, { headers: authHeaders() });
     const data = unwrap(await response.json().catch(() => []));
 
     if (!response.ok) {
@@ -35,7 +40,7 @@ export async function createOutlet(outlet) {
   try {
     const response = await fetch(`${API_BASE_URL}/outlets`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...authHeaders() },
       body: JSON.stringify(outlet),
     });
     const data = unwrap(await response.json().catch(() => null));

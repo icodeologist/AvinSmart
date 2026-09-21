@@ -30,10 +30,15 @@ export function productImagePath(product) {
   return `/assets/images/${product.image}`;
 }
 
+function authHeaders() {
+  const token = localStorage.getItem("token");
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 export async function fetchProducts(search = "") {
   try {
     const query = search.trim() ? `?q=${encodeURIComponent(search.trim())}` : "";
-    const response = await fetch(`${API_BASE_URL}/products${query}`);
+    const response = await fetch(`${API_BASE_URL}/products${query}`, { headers: authHeaders() });
     const data = unwrap(await response.json().catch(() => []));
 
     if (!response.ok) {
@@ -53,7 +58,7 @@ export async function createProduct(formData) {
   try {
     const response = await fetch(`${API_BASE_URL}/products`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...authHeaders() },
       body: JSON.stringify(formData),
     });
 

@@ -27,12 +27,12 @@ func New(db *gorm.DB, cfg config.Config) http.Handler {
 
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Mount("/auth", AuthRoutes(db, cfg))
-		r.Mount("/products", ProductRoutes(db))
+		r.Mount("/products", ProductRoutes(db, cfg))
 		r.Mount("/categories", CategoryRoutes(db, cfg))
-		r.Mount("/outlets", OutletRoutes(db))
+		r.Mount("/outlets", OutletRoutes(db, cfg))
 		r.Mount("/staff", StaffRoutes(db, cfg))
 		r.Mount("/salaries", SalaryRoutes(db, cfg))
-		r.Mount("/bills", BillRoutes(db))
+		r.Mount("/bills", BillRoutes(db, cfg))
 		r.With(middleware.RequireAuth(cfg), middleware.RequireRoles("admin", "manager", "sales")).Mount("/orders", OrderRoutes(db))
 		r.With(middleware.RequireAuth(cfg)).Mount("/notifications", notifications.Routes(db))
 	})
