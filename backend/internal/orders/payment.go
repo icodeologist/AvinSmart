@@ -44,6 +44,7 @@ func RecordPayment(db *gorm.DB) http.HandlerFunc {
 		}
 
 		var payment models.Payment
+		var updatedOrder models.Order
 		err := db.Transaction(func(tx *gorm.DB) error {
 			var order models.Order
 			// This is the important part: lock before reading AmountDue.
@@ -69,7 +70,11 @@ func RecordPayment(db *gorm.DB) http.HandlerFunc {
 			if err := tx.Create(&payment).Error; err != nil {
 				return err
 			}
-			return tx.Save(&order).Error
+			if err := tx.Save(&order).Error; err != nil {
+				return err
+			}
+			updatedOrder = order
+			return nil
 		})
 		if err != nil {
 			if err == gorm.ErrRecordNotFound {
@@ -79,6 +84,9 @@ func RecordPayment(db *gorm.DB) http.HandlerFunc {
 			api.WriteError(w, http.StatusBadRequest, err.Error())
 			return
 		}
-		api.WriteSuccess(w, http.StatusCreated, payment)
+		api.WriteSuccess(w, http.StatusCreated, map[string]any{
+			"payment": payment,
+			"order":   updatedOrder,
+		})
 	}
 }

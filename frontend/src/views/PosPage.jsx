@@ -29,6 +29,8 @@ export default function PosPage() {
   const [priceTier, setPriceTier] = useState("original");
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [pendingOrderId, setPendingOrderId] = useState(null);
+  const [pendingAmountDue, setPendingAmountDue] = useState(0);
+  const [paymentAmount, setPaymentAmount] = useState("");
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -36,10 +38,13 @@ export default function PosPage() {
 
   useEffect(() => {
     let active = true;
-    fetchProducts()
-      .then((data) => { if (active) setProducts(data.map(normalizeProduct)); })
-      .catch((loadError) => { if (active) setError(loadError.message); })
-      .finally(() => { if (active) setLoading(false); });
+    fetchProducts().then((data) => {
+      if (active) setProducts(data.map(normalizeProduct));
+    }).catch((loadError) => {
+      if (active) setError(loadError.message);
+    }).finally(() => {
+      if (active) setLoading(false);
+    });
     return () => { active = false; };
   }, []);
 
@@ -49,6 +54,7 @@ export default function PosPage() {
   const subtotal = cart.reduce((sum, item) => sum + selectedPrice(item, priceTier) * item.quantity, 0);
   const discount = Math.max(0, customerTotal - subtotal);
   const total = subtotal;
+  const amountDue = pendingOrderId ? pendingAmountDue : total;
 
   function addToCart(product) {
     setError("");
@@ -72,6 +78,7 @@ export default function PosPage() {
     setSubmitting(true);
     try {
       let orderId = pendingOrderId;
+      let due = amountDue;
       if (!orderId) {
         const backendTier = priceTier === "original" ? "customer_display" : priceTier;
         const order = await createOrder({
@@ -80,18 +87,39 @@ export default function PosPage() {
           cashier: staff.name || staff.email,
         });
         orderId = order.id;
+        due = Number(order.amount_due || total);
         setPendingOrderId(orderId);
+        setPendingAmountDue(due);
       }
-      await recordPayment(orderId, { amount: total, method: paymentMethod });
-      setNotice(`Payment recorded for ${money(total)}.`);
-      setCart([]);
-      setPendingOrderId(null);
-      setPriceTier("original");
+      const amount = Number(paymentAmount || due);
+      if (!Number.isFinite(amount) || amount <= 0 || amount > due + 0.009) {
+        throw new Error(`Enter an amount between ₹0.01 and ${money(due)}.`);
+      }
+      const result = await recordPayment(orderId, { amount, method: paymentMethod });
+      const remaining = Number(result.order?.amount_due || 0);
+      setPaymentAmount("");
+      if (remaining > 0) {
+        setPendingAmountDue(remaining);
+        setNotice(`Payment recorded. Remaining balance: ${money(remaining)}.`);
+      } else {
+        setNotice(`Payment recorded for ${money(amount)}. Order is fully paid.`);
+        setCart([]);
+        setPendingOrderId(null);
+        setPendingAmountDue(0);
+        setPriceTier("original");
+      }
     } catch (submitError) {
       setError(submitError.message);
     } finally {
       setSubmitting(false);
     }
+  }
+
+  function clearOrder() {
+    setCart([]);
+    setPendingOrderId(null);
+    setPendingAmountDue(0);
+    setPaymentAmount("");
   }
 
   function logout() {
@@ -102,5 +130,5 @@ export default function PosPage() {
 
   if (!staff) return <Navigate to="/pos/login" replace />;
 
-  return <main className="pos-shell"><header className="pos-topbar"><div className="avin-logo" aria-label="AvinSmart"><span className="avin-logo__avin"><span className="avin-logo__a">A</span>vin</span><span className="avin-logo__smart"><span className="avin-logo__s">S</span>mart</span><span className="pos-label">POS</span></div><div className="pos-staff"><span><strong>{staff.name}</strong><small>{staff.role || "Staff"} counter</small></span><button type="button" className="btn btn-sm btn-outline-secondary" onClick={logout}>Logout</button></div></header><div className="pos-workspace"><section className="pos-catalog"><div className="pos-search-row"><div className="input-group input-group-lg"><span className="input-group-text"><i className="ti ti-search"></i></span><input className="form-control" placeholder="Search product or scan barcode" value={search} onChange={(event) => setSearch(event.target.value)} /></div><button type="button" className="btn btn-outline-secondary btn-lg" disabled><i className="ti ti-barcode me-1"></i>Scan</button></div><div className="pos-categories">{categories.map((item) => <button type="button" key={item} className={`btn ${category === item ? "btn-primary" : "btn-light"}`} onClick={() => setCategory(item)}>{item}</button>)}</div>{loading && <div className="alert alert-info">Loading products...</div>}{error && <div className="alert alert-danger">{error}</div>}<div className="pos-product-grid">{visibleProducts.map((product) => <button type="button" className="pos-product-card" key={product.id} onClick={() => addToCart(product)} disabled={!product.quantityInStock}><img src={product.image} alt="" /><span className="pos-product-name">{product.name}</span><strong>{money(product.customerPrice)}</strong><small className="text-muted">{product.quantityInStock ? `${product.quantityInStock} in stock` : "Out of stock"}</small></button>)}</div></section><aside className="pos-cart"><div className="pos-cart-header"><div><h1>Current order</h1><small>{cart.length} product{cart.length === 1 ? "" : "s"}</small></div><button type="button" className="btn btn-sm btn-light" onClick={() => { setCart([]); setPendingOrderId(null); }}>Clear</button></div><div className="pos-cart-items">{cart.length ? cart.map((item) => <div className="pos-cart-item" key={item.id}><div><strong>{item.name}</strong><small>{money(selectedPrice(item, priceTier))} each</small></div><div className="pos-quantity"><button type="button" onClick={() => changeQuantity(item.id, -1)}>−</button><span>{item.quantity}</span><button type="button" onClick={() => changeQuantity(item.id, 1)}>+</button></div><strong>{money(selectedPrice(item, priceTier) * item.quantity)}</strong></div>) : <div className="pos-empty-cart"><i className="ti ti-shopping-cart"></i><p>Add products to start an order.</p></div>}</div><div className="pos-summary"><div><label htmlFor="posPriceTier">Price tier</label><select id="posPriceTier" className="form-select form-select-sm" value={priceTier} onChange={(event) => setPriceTier(event.target.value)}><option value="original">Original price</option><option value="retail">Retail price</option><option value="wholesale">Wholesale price</option></select></div><div><label htmlFor="posPaymentMethod">Payment</label><select id="posPaymentMethod" className="form-select form-select-sm" value={paymentMethod} onChange={(event) => setPaymentMethod(event.target.value)}><option value="cash">Cash</option><option value="card">Card</option><option value="upi">UPI</option></select></div><div><span>Price</span><strong>{money(customerTotal)}</strong></div><div><span>Discount</span><strong className="text-success">- {money(discount)}</strong></div><div className="pos-total"><span>Total</span><strong>{money(total)}</strong></div><button type="button" className="btn btn-success btn-lg w-100" onClick={payNow} disabled={!cart.length || submitting}>{submitting ? "Processing..." : "Pay Now"} <span>{money(total)}</span></button>{notice && <div className="alert alert-success mt-3 mb-0 py-2">{notice}</div>}{error && <div className="alert alert-danger mt-3 mb-0 py-2">{error}</div>}</div></aside></div></main>;
+  return <main className="pos-shell"><header className="pos-topbar"><div className="avin-logo" aria-label="AvinSmart"><span className="avin-logo__avin"><span className="avin-logo__a">A</span>vin</span><span className="avin-logo__smart"><span className="avin-logo__s">S</span>mart</span><span className="pos-label">POS</span></div><div className="pos-staff"><span><strong>{staff.name}</strong><small>{staff.role || "Staff"} counter</small></span><button type="button" className="btn btn-sm btn-outline-secondary" onClick={logout}>Logout</button></div></header><div className="pos-workspace"><section className="pos-catalog"><div className="pos-search-row"><div className="input-group input-group-lg"><span className="input-group-text"><i className="ti ti-search"></i></span><input className="form-control" placeholder="Search product or scan barcode" value={search} onChange={(event) => setSearch(event.target.value)} /></div><button type="button" className="btn btn-outline-secondary btn-lg" disabled><i className="ti ti-barcode me-1"></i>Scan</button></div><div className="pos-categories">{categories.map((item) => <button type="button" key={item} className={`btn ${category === item ? "btn-primary" : "btn-light"}`} onClick={() => setCategory(item)}>{item}</button>)}</div>{loading && <div className="alert alert-info">Loading products...</div>}{error && <div className="alert alert-danger">{error}</div>}<div className="pos-product-grid">{visibleProducts.map((product) => <button type="button" className="pos-product-card" key={product.id} onClick={() => addToCart(product)} disabled={!product.quantityInStock}><img src={product.image} alt="" /><span className="pos-product-name">{product.name}</span><strong>{money(product.customerPrice)}</strong><small className="text-muted">{product.quantityInStock ? `${product.quantityInStock} in stock` : "Out of stock"}</small></button>)}</div></section><aside className="pos-cart"><div className="pos-cart-header"><div><h1>Current order</h1><small>{cart.length} product{cart.length === 1 ? "" : "s"}</small></div><button type="button" className="btn btn-sm btn-light" onClick={clearOrder}>Clear</button></div><div className="pos-cart-items">{cart.length ? cart.map((item) => <div className="pos-cart-item" key={item.id}><div><strong>{item.name}</strong><small>{money(selectedPrice(item, priceTier))} each</small></div><div className="pos-quantity"><button type="button" onClick={() => changeQuantity(item.id, -1)}>−</button><span>{item.quantity}</span><button type="button" onClick={() => changeQuantity(item.id, 1)}>+</button></div><strong>{money(selectedPrice(item, priceTier) * item.quantity)}</strong></div>) : <div className="pos-empty-cart"><i className="ti ti-shopping-cart"></i><p>Add products to start an order.</p></div>}</div><div className="pos-summary"><div><label htmlFor="posPriceTier">Price tier</label><select id="posPriceTier" className="form-select form-select-sm" value={priceTier} onChange={(event) => setPriceTier(event.target.value)} disabled={Boolean(pendingOrderId)}><option value="original">Original price</option><option value="retail">Retail price</option><option value="wholesale">Wholesale price</option></select></div><div><label htmlFor="posPaymentMethod">Payment</label><select id="posPaymentMethod" className="form-select form-select-sm" value={paymentMethod} onChange={(event) => setPaymentMethod(event.target.value)}><option value="cash">Cash</option><option value="card">Card</option><option value="upi">UPI</option></select></div><div><label htmlFor="posPaymentAmount">Amount to pay</label><input id="posPaymentAmount" type="number" min="0.01" max={amountDue || undefined} step="0.01" className="form-control form-control-sm" value={paymentAmount} placeholder={money(amountDue)} onChange={(event) => setPaymentAmount(event.target.value)} /></div><div><span>Price</span><strong>{money(customerTotal)}</strong></div><div><span>Discount</span><strong className="text-success">- {money(discount)}</strong></div><div className="pos-total"><span>{pendingOrderId ? "Remaining" : "Total"}</span><strong>{money(amountDue)}</strong></div><button type="button" className="btn btn-success btn-lg w-100" onClick={payNow} disabled={!cart.length || submitting}>{submitting ? "Processing..." : "Pay Now"} <span>{money(amountDue)}</span></button>{notice && <div className="alert alert-success mt-3 mb-0 py-2">{notice}</div>}{error && <div className="alert alert-danger mt-3 mb-0 py-2">{error}</div>}</div></aside></div></main>;
 }
