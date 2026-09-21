@@ -63,9 +63,24 @@ func Create(db *gorm.DB) http.HandlerFunc {
 					return fmt.Errorf("insufficient stock for %s: %d requested, %d available", product.Title, item.Quantity, product.Quantity)
 				}
 				price := priceForTier(product, payload.PriceTier)
-				line := models.OrderItem{ProductID: product.ID, Title: product.Title, Quantity: item.Quantity, UnitPrice: price, Amount: price * float64(item.Quantity)}
+				quantity := float64(item.Quantity)
+				line := models.OrderItem{
+					ProductID:            product.ID,
+					Title:                product.Title,
+					Quantity:             item.Quantity,
+					UnitPrice:            price,
+					Amount:               price * quantity,
+					RetailPrice:          product.RetailPrice,
+					CustomerDisplayPrice: product.CustomerDisplayPrice,
+					BoughtPrice:          product.BoughtPrice,
+					WholesalePrice:       product.WholeSalePrice,
+				}
 				order.Items = append(order.Items, line)
 				order.Total += line.Amount
+				order.RetailTotal += product.RetailPrice * quantity
+				order.CustomerDisplayTotal += product.CustomerDisplayPrice * quantity
+				order.BoughtTotal += product.BoughtPrice * quantity
+				order.WholesaleTotal += product.WholeSalePrice * quantity
 				if err := tx.Model(&product).Update("quantity", gorm.Expr("quantity - ?", item.Quantity)).Error; err != nil {
 					return err
 				}
