@@ -1,10 +1,12 @@
 package models
 
-import "time"
+import (
+	"time"
 
-import "avinsmart/backend/internal/money"
+	"avinsmart/backend/internal/money"
 
-import "github.com/shopspring/decimal"
+	"github.com/shopspring/decimal"
+)
 
 type Bill struct {
 	ID                   uint            `gorm:"primaryKey;column:id" json:"id"`
@@ -20,7 +22,7 @@ type Bill struct {
 	WholesaleTotal       money.Amount    `gorm:"column:wholesale_total;type:numeric(12,2);not null;default:0" json:"wholesale_total"`
 	BoughtTotal          money.Amount    `gorm:"column:bought_total;type:numeric(12,2);not null;default:0" json:"bought_total"`
 	CustomerDisplayTotal money.Amount    `gorm:"column:customer_display_total;type:numeric(12,2);not null;default:0" json:"customer_display_total"`
-	TaxRate              decimal.Decimal `gorm:"column:tax_rate;type:numeric(8,4);not null;default:0" json:"tax_rate"`
+	TaxRate              decimal.Decimal `gorm:"column:tax_rate;type:numeric(12,4);not null;default:0" json:"tax_rate"`
 	TaxAmount            money.Amount    `gorm:"column:tax_amount;type:numeric(12,2);not null;default:0" json:"tax_amount"`
 	Discount             money.Amount    `gorm:"column:discount;type:numeric(12,2);not null;default:0" json:"discount"`
 	Total                money.Amount    `gorm:"column:total;type:numeric(12,2);not null;default:0" json:"total"`

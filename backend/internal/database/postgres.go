@@ -2,6 +2,8 @@ package database
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
 	"avinsmart/backend/internal/models"
 
@@ -52,6 +54,10 @@ func AutoMigrate(db *gorm.DB) error {
 		return err
 	}
 
+	if err := migrateBillTaxRate(db); err != nil {
+		return err
+	}
+
 	if db.Migrator().HasColumn(&models.Admin{}, "photo") {
 		if err := db.Migrator().DropColumn(&models.Admin{}, "photo"); err != nil {
 			return err
@@ -80,6 +86,36 @@ func AutoMigrate(db *gorm.DB) error {
 	}
 
 	return db.AutoMigrate(&models.Product{})
+}
+
+func migrateBillTaxRate(db *gorm.DB) error {
+	if db.Dialector.Name() != "postgres" || !db.Migrator().HasTable(&models.Bill{}) {
+		return nil
+	}
+
+	columns, err := db.Migrator().ColumnTypes(&models.Bill{})
+	if err != nil {
+		return err
+	}
+
+	for _, column := range columns {
+		if !strings.EqualFold(column.Name(), "tax_rate") {
+			continue
+		}
+
+		precision, scale, known := column.DecimalSize()
+		if known && precision >= 12 && scale >= 4 {
+			return nil
+		}
+
+		return db.Exec(`
+			ALTER TABLE "bills"
+			ALTER COLUMN "tax_rate" TYPE numeric(12,4)
+			USING "tax_rate"::numeric(12,4)
+		`).Error
+	}
+
+	return fmt.Errorf("bills.tax_rate column was not found after auto-migration")
 }
 
 func seedDefaultOutlet(db *gorm.DB) (*models.Outlet, error) {
