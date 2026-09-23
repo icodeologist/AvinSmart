@@ -27,7 +27,7 @@ export async function createBill(bill) {
       bought_price: String(item.boughtPrice ?? "0.00"),
       whole_sale_price: String(item.wholeSalePrice ?? "0.00"),
     })),
-    tax_rate: Number(bill.taxRate) || 0,
+    tax_rate: String(bill.taxRate ?? "0"),
     discount: String(bill.discount ?? "0.00"),
     notes: String(bill.notes || "").trim(),
   };
@@ -57,7 +57,7 @@ export async function createBill(bill) {
 export async function quoteBill(bill) {
   const payload = {
     price_tier: bill.priceTier || "retail",
-    tax_rate: Number(bill.taxRate) || 0,
+    tax_rate: String(bill.taxRate ?? "0"),
     discount: String(bill.discount ?? "0.00"),
     items: (bill.items || []).map((item) => ({
       product_id: item.productId || undefined,

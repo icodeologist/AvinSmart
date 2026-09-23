@@ -8,7 +8,6 @@ import (
 	"avinsmart/backend/internal/models"
 	"avinsmart/backend/internal/pricing"
 
-	"github.com/shopspring/decimal"
 	"gorm.io/gorm"
 )
 
@@ -45,7 +44,7 @@ func Quote(db *gorm.DB) http.HandlerFunc {
 			}
 			items = append(items, line)
 		}
-		quote, err := pricing.Build(products, items, payload.PriceTier, decimal.NewFromFloat(payload.TaxRate), payload.Discount)
+		quote, err := pricing.Build(products, items, payload.PriceTier, payload.TaxRate, payload.Discount)
 		if err != nil {
 			api.WriteError(w, http.StatusBadRequest, err.Error())
 			return

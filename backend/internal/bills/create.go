@@ -48,7 +48,7 @@ type createBillRequest struct {
 	PaymentMethod string            `json:"payment_method"`
 	Cashier       string            `json:"cashier"`
 	PriceTier     string            `json:"price_tier"`
-	TaxRate       float64           `json:"tax_rate"`
+	TaxRate       decimal.Decimal   `json:"tax_rate"`
 	Discount      money.Amount      `json:"discount"`
 	Notes         string            `json:"notes"`
 	Items         []billItemRequest `json:"items"`
@@ -95,7 +95,7 @@ func (r *createBillRequest) validate() api.Fields {
 		}
 	}
 
-	if r.TaxRate < 0 {
+	if r.TaxRate.IsNegative() {
 		fields.Add("tax_rate", "tax_rate cannot be negative")
 	}
 
@@ -175,7 +175,7 @@ func CreateBill(db *gorm.DB) http.HandlerFunc {
 				resolvedSKUs = append(resolvedSKUs, sku)
 			}
 
-			quote, err := pricing.Build(products, pricingItems, payload.PriceTier, decimal.NewFromFloat(bill.TaxRate), bill.Discount)
+			quote, err := pricing.Build(products, pricingItems, payload.PriceTier, bill.TaxRate, bill.Discount)
 			if err != nil {
 				return err
 			}

@@ -38,3 +38,14 @@ func TestBuildAppliesTaxAndDiscountToSelectedTier(t *testing.T) {
 		t.Fatalf("quote = subtotal %s, tax %s, total %s; want 90.00, 16.20, 101.20", quote.Subtotal.String(), quote.TaxAmount.String(), quote.Total.String())
 	}
 }
+
+func TestBuildPreservesFractionalTaxRate(t *testing.T) {
+	product := models.Product{ID: 1, RetailPrice: money.MustParse("100.00")}
+	quote, err := Build(map[uint]models.Product{product.ID: product}, []Item{{ProductID: &product.ID, Quantity: 1}}, "retail", decimal.RequireFromString("18.125"), money.Zero())
+	if err != nil {
+		t.Fatalf("Build() error = %v", err)
+	}
+	if quote.TaxRate != "18.125" || quote.TaxAmount.String() != "18.13" || quote.Total.String() != "118.13" {
+		t.Fatalf("quote = rate %s, tax %s, total %s; want 18.125, 18.13, 118.13", quote.TaxRate, quote.TaxAmount.String(), quote.Total.String())
+	}
+}
