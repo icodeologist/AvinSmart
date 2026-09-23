@@ -9,6 +9,7 @@ import (
 	"avinsmart/backend/internal/api"
 	"avinsmart/backend/internal/models"
 	"avinsmart/backend/internal/money"
+	"avinsmart/backend/internal/pricing"
 
 	"github.com/shopspring/decimal"
 	"gorm.io/gorm"
@@ -132,10 +133,13 @@ func CreateBill(db *gorm.DB) http.HandlerFunc {
 		}
 
 		txErr := db.Transaction(func(tx *gorm.DB) error {
-			var subtotal, retailTotal, wholesaleTotal, boughtTotal, customerDisplayTotal = money.Zero(), money.Zero(), money.Zero(), money.Zero(), money.Zero()
+			products := make(map[uint]models.Product, len(payload.Items))
+			pricingItems := make([]pricing.Item, 0, len(payload.Items))
+			resolvedSKUs := make([]string, 0, len(payload.Items))
 
 			for _, item := range payload.Items {
-				line := snapshotItem(item)
+				line := pricing.Item{ProductID: item.ProductID, Title: strings.TrimSpace(item.Name), Quantity: item.Quantity, Unit: item.Unit, UnitPrice: item.UnitPrice, RetailPrice: item.RetailPrice, CustomerDisplayPrice: item.CustomerDisplayPrice, BoughtPrice: item.BoughtPrice, WholesalePrice: item.WholeSalePrice}
+				sku := strings.TrimSpace(item.SKUID)
 
 				if item.ProductID != nil && *item.ProductID != 0 {
 					var product models.Product
@@ -160,39 +164,26 @@ func CreateBill(db *gorm.DB) http.HandlerFunc {
 						return err
 					}
 
+					products[product.ID] = product
 					line.ProductID = &product.ID
-					line.Title = product.Title
-					line.RetailPrice = product.RetailPrice
-					line.CustomerDisplayPrice = product.CustomerDisplayPrice
-					line.BoughtPrice = product.BoughtPrice
-					line.WholeSalePrice = product.WholeSalePrice
-					if line.SKUID == "" {
-						line.SKUID = product.SKUID
+					line.Title, line.Unit = product.Title, product.Unit
+					if sku == "" {
+						sku = product.SKUID
 					}
-					if line.Unit == "" {
-						line.Unit = product.Unit
-					}
-					line.UnitPrice = priceForTier(&product, payload.PriceTier)
 				}
-
-				line.Amount = line.UnitPrice.Multiply(line.Quantity)
-				bill.Items = append(bill.Items, line)
-				subtotal = subtotal.Add(line.Amount)
-				retailTotal = retailTotal.Add(line.RetailPrice.Multiply(line.Quantity))
-				wholesaleTotal = wholesaleTotal.Add(line.WholeSalePrice.Multiply(line.Quantity))
-				boughtTotal = boughtTotal.Add(line.BoughtPrice.Multiply(line.Quantity))
-				customerDisplayTotal = customerDisplayTotal.Add(line.CustomerDisplayPrice.Multiply(line.Quantity))
+				pricingItems = append(pricingItems, line)
+				resolvedSKUs = append(resolvedSKUs, sku)
 			}
 
-			bill.Subtotal = subtotal
-			bill.RetailTotal = retailTotal
-			bill.WholesaleTotal = wholesaleTotal
-			bill.BoughtTotal = boughtTotal
-			bill.CustomerDisplayTotal = customerDisplayTotal
-			bill.TaxAmount = subtotal.ApplyRate(decimal.NewFromFloat(bill.TaxRate))
-			bill.Total = subtotal.Add(bill.TaxAmount).Sub(bill.Discount)
-			if bill.Total.IsNegative() {
-				bill.Total = money.Zero()
+			quote, err := pricing.Build(products, pricingItems, payload.PriceTier, decimal.NewFromFloat(bill.TaxRate), bill.Discount)
+			if err != nil {
+				return err
+			}
+			bill.Subtotal, bill.RetailTotal = quote.Subtotal, quote.RetailTotal
+			bill.WholesaleTotal, bill.BoughtTotal = quote.WholesaleTotal, quote.BoughtTotal
+			bill.CustomerDisplayTotal, bill.TaxAmount, bill.Total = quote.CustomerDisplayTotal, quote.TaxAmount, quote.Total
+			for index, line := range quote.Lines {
+				bill.Items = append(bill.Items, models.BillItem{ProductID: line.ProductID, Title: line.Title, SKUID: resolvedSKUs[index], Quantity: line.Quantity, Unit: line.Unit, UnitPrice: line.UnitPrice, Amount: line.Amount, RetailPrice: line.RetailPrice, CustomerDisplayPrice: line.CustomerDisplayPrice, BoughtPrice: line.BoughtPrice, WholeSalePrice: line.WholesalePrice})
 			}
 
 			return tx.Create(&bill).Error
@@ -214,34 +205,5 @@ func CreateBill(db *gorm.DB) http.HandlerFunc {
 		}
 
 		api.WriteSuccess(w, http.StatusCreated, bill)
-	}
-}
-
-func snapshotItem(item billItemRequest) models.BillItem {
-	return models.BillItem{
-		ProductID:            item.ProductID,
-		Title:                item.Name,
-		SKUID:                item.SKUID,
-		Quantity:             item.Quantity,
-		Unit:                 item.Unit,
-		UnitPrice:            item.UnitPrice,
-		Amount:               item.Amount,
-		RetailPrice:          item.RetailPrice,
-		CustomerDisplayPrice: item.CustomerDisplayPrice,
-		BoughtPrice:          item.BoughtPrice,
-		WholeSalePrice:       item.WholeSalePrice,
-	}
-}
-
-func priceForTier(product *models.Product, tier string) money.Amount {
-	switch tier {
-	case "customer_display":
-		return product.CustomerDisplayPrice
-	case "bought":
-		return product.BoughtPrice
-	case "wholesale":
-		return product.WholeSalePrice
-	default:
-		return product.RetailPrice
 	}
 }

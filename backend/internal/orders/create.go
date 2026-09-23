@@ -9,8 +9,10 @@ import (
 	"avinsmart/backend/internal/api"
 	"avinsmart/backend/internal/models"
 	"avinsmart/backend/internal/money"
+	"avinsmart/backend/internal/pricing"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/shopspring/decimal"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -52,6 +54,8 @@ func Create(db *gorm.DB) http.HandlerFunc {
 
 		order := models.Order{OrderNumber: payload.OrderNumber, Status: "pending", PriceTier: payload.PriceTier, Cashier: strings.TrimSpace(payload.Cashier)}
 		err := db.Transaction(func(tx *gorm.DB) error {
+			products := make(map[uint]models.Product, len(payload.Items))
+			pricingItems := make([]pricing.Item, 0, len(payload.Items))
 			for _, item := range payload.Items {
 				if item.ProductID == 0 || item.Quantity <= 0 {
 					return fmt.Errorf("product_id and quantity must be positive")
@@ -63,29 +67,23 @@ func Create(db *gorm.DB) http.HandlerFunc {
 				if product.Quantity < item.Quantity {
 					return fmt.Errorf("insufficient stock for %s: %d requested, %d available", product.Title, item.Quantity, product.Quantity)
 				}
-				price := priceForTier(product, payload.PriceTier)
-				line := models.OrderItem{
-					ProductID:            product.ID,
-					Title:                product.Title,
-					Quantity:             item.Quantity,
-					UnitPrice:            price,
-					Amount:               price.Multiply(item.Quantity),
-					RetailPrice:          product.RetailPrice,
-					CustomerDisplayPrice: product.CustomerDisplayPrice,
-					BoughtPrice:          product.BoughtPrice,
-					WholesalePrice:       product.WholeSalePrice,
-				}
-				order.Items = append(order.Items, line)
-				order.Total = order.Total.Add(line.Amount)
-				order.RetailTotal = order.RetailTotal.Add(product.RetailPrice.Multiply(item.Quantity))
-				order.CustomerDisplayTotal = order.CustomerDisplayTotal.Add(product.CustomerDisplayPrice.Multiply(item.Quantity))
-				order.BoughtTotal = order.BoughtTotal.Add(product.BoughtPrice.Multiply(item.Quantity))
-				order.WholesaleTotal = order.WholesaleTotal.Add(product.WholeSalePrice.Multiply(item.Quantity))
+				products[product.ID] = product
+				productID := product.ID
+				pricingItems = append(pricingItems, pricing.Item{ProductID: &productID, Quantity: item.Quantity})
 				if err := tx.Model(&product).Update("quantity", gorm.Expr("quantity - ?", item.Quantity)).Error; err != nil {
 					return err
 				}
 			}
-			order.AmountDue = order.Total
+			quote, err := pricing.Build(products, pricingItems, payload.PriceTier, decimal.Zero, money.Zero())
+			if err != nil {
+				return err
+			}
+			order.Total, order.RetailTotal = quote.Total, quote.RetailTotal
+			order.CustomerDisplayTotal, order.BoughtTotal = quote.CustomerDisplayTotal, quote.BoughtTotal
+			order.WholesaleTotal, order.AmountDue = quote.WholesaleTotal, quote.Total
+			for _, line := range quote.Lines {
+				order.Items = append(order.Items, models.OrderItem{ProductID: *line.ProductID, Title: line.Title, Quantity: line.Quantity, UnitPrice: line.UnitPrice, Amount: line.Amount, RetailPrice: line.RetailPrice, CustomerDisplayPrice: line.CustomerDisplayPrice, BoughtPrice: line.BoughtPrice, WholesalePrice: line.WholesalePrice})
+			}
 			return tx.Create(&order).Error
 		})
 		if err != nil {
@@ -93,17 +91,6 @@ func Create(db *gorm.DB) http.HandlerFunc {
 			return
 		}
 		api.WriteSuccess(w, http.StatusCreated, order)
-	}
-}
-
-func priceForTier(product models.Product, tier string) money.Amount {
-	switch tier {
-	case "customer_display":
-		return product.CustomerDisplayPrice
-	case "wholesale":
-		return product.WholeSalePrice
-	default:
-		return product.RetailPrice
 	}
 }
 
