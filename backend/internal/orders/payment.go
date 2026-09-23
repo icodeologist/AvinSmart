@@ -2,12 +2,12 @@ package orders
 
 import (
 	"fmt"
-	"math"
 	"net/http"
 	"strings"
 
 	"avinsmart/backend/internal/api"
 	"avinsmart/backend/internal/models"
+	"avinsmart/backend/internal/money"
 
 	"github.com/go-chi/chi/v5"
 	"gorm.io/gorm"
@@ -15,8 +15,8 @@ import (
 )
 
 type paymentRequest struct {
-	Amount float64 `json:"amount"`
-	Method string  `json:"method"`
+	Amount money.Amount `json:"amount"`
+	Method string       `json:"method"`
 }
 
 // RecordPayment uses a database row lock because AmountDue is shared state.
@@ -34,7 +34,7 @@ func RecordPayment(db *gorm.DB) http.HandlerFunc {
 			return
 		}
 		payload.Method = strings.TrimSpace(strings.ToLower(payload.Method))
-		if payload.Amount <= 0 || math.IsNaN(payload.Amount) || math.IsInf(payload.Amount, 0) {
+		if payload.Amount.IsNegative() || payload.Amount.IsZero() {
 			api.WriteError(w, http.StatusBadRequest, "amount must be greater than zero")
 			return
 		}
@@ -54,17 +54,17 @@ func RecordPayment(db *gorm.DB) http.HandlerFunc {
 				}
 				return err
 			}
-			if order.Status == "paid" || order.AmountDue <= 0.009 {
+			if order.Status == "paid" || order.AmountDue.IsZero() {
 				return fmt.Errorf("order is already paid")
 			}
-			if payload.Amount > order.AmountDue+0.009 {
-				return fmt.Errorf("payment exceeds amount due of %.2f", order.AmountDue)
+			if payload.Amount.GreaterThan(order.AmountDue) {
+				return fmt.Errorf("payment exceeds amount due of %s", order.AmountDue.String())
 			}
 			payment = models.Payment{OrderID: order.ID, Amount: payload.Amount, Method: payload.Method}
-			order.AmountPaid += payload.Amount
-			order.AmountDue = order.Total - order.AmountPaid
-			if order.AmountDue <= 0.009 {
-				order.AmountDue = 0
+			order.AmountPaid = order.AmountPaid.Add(payload.Amount)
+			order.AmountDue = order.Total.Sub(order.AmountPaid)
+			if order.AmountDue.IsZero() {
+				order.AmountDue = money.Zero()
 				order.Status = "paid"
 			}
 			if err := tx.Create(&payment).Error; err != nil {

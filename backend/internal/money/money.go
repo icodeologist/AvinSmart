@@ -6,6 +6,7 @@ package money
 
 import (
 	"bytes"
+	"database/sql/driver"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -60,6 +61,34 @@ func (a Amount) String() string { return a.Decimal.StringFixed(2) }
 
 func (a Amount) MarshalJSON() ([]byte, error) {
 	return json.Marshal(a.String())
+}
+
+// Value and Scan let Amount be stored in PostgreSQL numeric columns without
+// converting through float64.
+func (a Amount) Value() (driver.Value, error) { return a.String(), nil }
+
+func (a *Amount) Scan(value interface{}) error {
+	switch value := value.(type) {
+	case nil:
+		*a = Zero()
+		return nil
+	case []byte:
+		parsed, err := Parse(string(value))
+		if err != nil {
+			return err
+		}
+		*a = parsed
+		return nil
+	case string:
+		parsed, err := Parse(value)
+		if err != nil {
+			return err
+		}
+		*a = parsed
+		return nil
+	default:
+		return fmt.Errorf("cannot scan %T as INR amount", value)
+	}
 }
 
 func (a *Amount) UnmarshalJSON(data []byte) error {

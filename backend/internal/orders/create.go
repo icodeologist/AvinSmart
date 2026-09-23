@@ -8,6 +8,7 @@ import (
 
 	"avinsmart/backend/internal/api"
 	"avinsmart/backend/internal/models"
+	"avinsmart/backend/internal/money"
 
 	"github.com/go-chi/chi/v5"
 	"gorm.io/gorm"
@@ -63,24 +64,23 @@ func Create(db *gorm.DB) http.HandlerFunc {
 					return fmt.Errorf("insufficient stock for %s: %d requested, %d available", product.Title, item.Quantity, product.Quantity)
 				}
 				price := priceForTier(product, payload.PriceTier)
-				quantity := float64(item.Quantity)
 				line := models.OrderItem{
 					ProductID:            product.ID,
 					Title:                product.Title,
 					Quantity:             item.Quantity,
 					UnitPrice:            price,
-					Amount:               price * quantity,
+					Amount:               price.Multiply(item.Quantity),
 					RetailPrice:          product.RetailPrice,
 					CustomerDisplayPrice: product.CustomerDisplayPrice,
 					BoughtPrice:          product.BoughtPrice,
 					WholesalePrice:       product.WholeSalePrice,
 				}
 				order.Items = append(order.Items, line)
-				order.Total += line.Amount
-				order.RetailTotal += product.RetailPrice * quantity
-				order.CustomerDisplayTotal += product.CustomerDisplayPrice * quantity
-				order.BoughtTotal += product.BoughtPrice * quantity
-				order.WholesaleTotal += product.WholeSalePrice * quantity
+				order.Total = order.Total.Add(line.Amount)
+				order.RetailTotal = order.RetailTotal.Add(product.RetailPrice.Multiply(item.Quantity))
+				order.CustomerDisplayTotal = order.CustomerDisplayTotal.Add(product.CustomerDisplayPrice.Multiply(item.Quantity))
+				order.BoughtTotal = order.BoughtTotal.Add(product.BoughtPrice.Multiply(item.Quantity))
+				order.WholesaleTotal = order.WholesaleTotal.Add(product.WholeSalePrice.Multiply(item.Quantity))
 				if err := tx.Model(&product).Update("quantity", gorm.Expr("quantity - ?", item.Quantity)).Error; err != nil {
 					return err
 				}
@@ -96,7 +96,7 @@ func Create(db *gorm.DB) http.HandlerFunc {
 	}
 }
 
-func priceForTier(product models.Product, tier string) float64 {
+func priceForTier(product models.Product, tier string) money.Amount {
 	switch tier {
 	case "customer_display":
 		return product.CustomerDisplayPrice

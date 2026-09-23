@@ -8,7 +8,9 @@ import (
 
 	"avinsmart/backend/internal/api"
 	"avinsmart/backend/internal/models"
+	"avinsmart/backend/internal/money"
 
+	"github.com/shopspring/decimal"
 	"gorm.io/gorm"
 )
 
@@ -22,19 +24,19 @@ var validPriceTiers = map[string]bool{
 var defaultPriceTier = "retail"
 
 type billItemRequest struct {
-	ProductID *uint   `json:"product_id"`
-	Name      string  `json:"name"`
-	SKUID     string  `json:"sku_id"`
-	Quantity  int     `json:"quantity"`
-	Unit      string  `json:"unit"`
-	UnitPrice float64 `json:"unit_price"`
-	Amount    float64 `json:"amount"`
+	ProductID *uint        `json:"product_id"`
+	Name      string       `json:"name"`
+	SKUID     string       `json:"sku_id"`
+	Quantity  int          `json:"quantity"`
+	Unit      string       `json:"unit"`
+	UnitPrice money.Amount `json:"unit_price"`
+	Amount    money.Amount `json:"amount"`
 	// Price snapshots are kept for the record so a bill is not affected
 	// when a product's prices change later.
-	RetailPrice          float64 `json:"retail_price"`
-	CustomerDisplayPrice float64 `json:"customer_display_price"`
-	BoughtPrice          float64 `json:"bought_price"`
-	WholeSalePrice       float64 `json:"whole_sale_price"`
+	RetailPrice          money.Amount `json:"retail_price"`
+	CustomerDisplayPrice money.Amount `json:"customer_display_price"`
+	BoughtPrice          money.Amount `json:"bought_price"`
+	WholeSalePrice       money.Amount `json:"whole_sale_price"`
 }
 
 type createBillRequest struct {
@@ -46,7 +48,7 @@ type createBillRequest struct {
 	Cashier       string            `json:"cashier"`
 	PriceTier     string            `json:"price_tier"`
 	TaxRate       float64           `json:"tax_rate"`
-	Discount      float64           `json:"discount"`
+	Discount      money.Amount      `json:"discount"`
 	Notes         string            `json:"notes"`
 	Items         []billItemRequest `json:"items"`
 }
@@ -87,7 +89,7 @@ func (r *createBillRequest) validate() api.Fields {
 			fields.Add(fmt.Sprintf("items[%d].quantity", i), "quantity must be greater than zero")
 		}
 
-		if item.UnitPrice < 0 {
+		if item.UnitPrice.IsNegative() {
 			fields.Add(fmt.Sprintf("items[%d].unit_price", i), "unit_price cannot be negative")
 		}
 	}
@@ -96,7 +98,7 @@ func (r *createBillRequest) validate() api.Fields {
 		fields.Add("tax_rate", "tax_rate cannot be negative")
 	}
 
-	if r.Discount < 0 {
+	if r.Discount.IsNegative() {
 		fields.Add("discount", "discount cannot be negative")
 	}
 
@@ -130,7 +132,7 @@ func CreateBill(db *gorm.DB) http.HandlerFunc {
 		}
 
 		txErr := db.Transaction(func(tx *gorm.DB) error {
-			var subtotal, retailTotal, wholesaleTotal, boughtTotal, customerDisplayTotal float64
+			var subtotal, retailTotal, wholesaleTotal, boughtTotal, customerDisplayTotal = money.Zero(), money.Zero(), money.Zero(), money.Zero(), money.Zero()
 
 			for _, item := range payload.Items {
 				line := snapshotItem(item)
@@ -173,13 +175,13 @@ func CreateBill(db *gorm.DB) http.HandlerFunc {
 					line.UnitPrice = priceForTier(&product, payload.PriceTier)
 				}
 
-				line.Amount = float64(line.Quantity) * line.UnitPrice
+				line.Amount = line.UnitPrice.Multiply(line.Quantity)
 				bill.Items = append(bill.Items, line)
-				subtotal += line.Amount
-				retailTotal += float64(line.Quantity) * line.RetailPrice
-				wholesaleTotal += float64(line.Quantity) * line.WholeSalePrice
-				boughtTotal += float64(line.Quantity) * line.BoughtPrice
-				customerDisplayTotal += float64(line.Quantity) * line.CustomerDisplayPrice
+				subtotal = subtotal.Add(line.Amount)
+				retailTotal = retailTotal.Add(line.RetailPrice.Multiply(line.Quantity))
+				wholesaleTotal = wholesaleTotal.Add(line.WholeSalePrice.Multiply(line.Quantity))
+				boughtTotal = boughtTotal.Add(line.BoughtPrice.Multiply(line.Quantity))
+				customerDisplayTotal = customerDisplayTotal.Add(line.CustomerDisplayPrice.Multiply(line.Quantity))
 			}
 
 			bill.Subtotal = subtotal
@@ -187,12 +189,10 @@ func CreateBill(db *gorm.DB) http.HandlerFunc {
 			bill.WholesaleTotal = wholesaleTotal
 			bill.BoughtTotal = boughtTotal
 			bill.CustomerDisplayTotal = customerDisplayTotal
-			bill.TaxAmount = subtotal * bill.TaxRate / 100
-			// Discount is calculated from the customer-display total to the
-			// selected tier, so keep that meaning when persisting the final total.
-			bill.Total = customerDisplayTotal + bill.TaxAmount - bill.Discount
-			if bill.Total < 0 {
-				bill.Total = 0
+			bill.TaxAmount = subtotal.ApplyRate(decimal.NewFromFloat(bill.TaxRate))
+			bill.Total = subtotal.Add(bill.TaxAmount).Sub(bill.Discount)
+			if bill.Total.IsNegative() {
+				bill.Total = money.Zero()
 			}
 
 			return tx.Create(&bill).Error
@@ -233,7 +233,7 @@ func snapshotItem(item billItemRequest) models.BillItem {
 	}
 }
 
-func priceForTier(product *models.Product, tier string) float64 {
+func priceForTier(product *models.Product, tier string) money.Amount {
 	switch tier {
 	case "customer_display":
 		return product.CustomerDisplayPrice

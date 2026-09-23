@@ -2,6 +2,8 @@ package models
 
 import (
 	"time"
+
+	"avinsmart/backend/internal/money"
 )
 
 type Product struct {
@@ -17,10 +19,10 @@ type Product struct {
 	SKUID                string       `gorm:"column:sku_id;type:varchar(80);not null;uniqueIndex" json:"sku_id"`
 	Quantity             int          `gorm:"column:quantity;not null;default:0" json:"quantity"`
 	Unit                 string       `gorm:"column:unit;type:varchar(40)" json:"unit"`
-	RetailPrice          float64      `gorm:"column:retail_price;type:numeric(12,2);not null;default:0" json:"retail_price"`
-	CustomerDisplayPrice float64      `gorm:"column:customer_display_price;type:numeric(12,2);not null;default:0" json:"customer_display_price"`
-	BoughtPrice          float64      `gorm:"column:bought_price;type:numeric(12,2);not null;default:0" json:"bought_price"`
-	WholeSalePrice       float64      `gorm:"column:whole_sale_price;type:numeric(12,2);not null;default:0" json:"whole_sale_price"`
+	RetailPrice          money.Amount `gorm:"column:retail_price;type:numeric(12,2);not null;default:0" json:"retail_price"`
+	CustomerDisplayPrice money.Amount `gorm:"column:customer_display_price;type:numeric(12,2);not null;default:0" json:"customer_display_price"`
+	BoughtPrice          money.Amount `gorm:"column:bought_price;type:numeric(12,2);not null;default:0" json:"bought_price"`
+	WholeSalePrice       money.Amount `gorm:"column:whole_sale_price;type:numeric(12,2);not null;default:0" json:"whole_sale_price"`
 	CreatedAt            time.Time    `gorm:"column:created_at;autoCreateTime" json:"created_at"`
 	UpdatedAt            time.Time    `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
 	Image                string       `gorm:"column:image;type:text" json:"image"`

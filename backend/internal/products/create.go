@@ -12,6 +12,7 @@ import (
 
 	"avinsmart/backend/internal/api"
 	"avinsmart/backend/internal/models"
+	"avinsmart/backend/internal/money"
 
 	"gorm.io/gorm"
 )
@@ -22,19 +23,19 @@ const (
 )
 
 type createProductRequest struct {
-	Title                string  `json:"title"`
-	Description          string  `json:"description"`
-	OutletID             *uint   `json:"outlet_id"`
-	CategoryName         string  `json:"category_name"`
-	SubCategoryName      string  `json:"sub_category_name"`
-	SKUID                string  `json:"sku_id"`
-	Quantity             int     `json:"quantity"`
-	Unit                 string  `json:"unit"`
-	RetailPrice          float64 `json:"retail_price"`
-	CustomerDisplayPrice float64 `json:"customer_display_price"`
-	BoughtPrice          float64 `json:"bought_price"`
-	WholeSalePrice       float64 `json:"whole_sale_price"`
-	ImageBase64          string  `json:"image_base64"`
+	Title                string       `json:"title"`
+	Description          string       `json:"description"`
+	OutletID             *uint        `json:"outlet_id"`
+	CategoryName         string       `json:"category_name"`
+	SubCategoryName      string       `json:"sub_category_name"`
+	SKUID                string       `json:"sku_id"`
+	Quantity             int          `json:"quantity"`
+	Unit                 string       `json:"unit"`
+	RetailPrice          money.Amount `json:"retail_price"`
+	CustomerDisplayPrice money.Amount `json:"customer_display_price"`
+	BoughtPrice          money.Amount `json:"bought_price"`
+	WholeSalePrice       money.Amount `json:"whole_sale_price"`
+	ImageBase64          string       `json:"image_base64"`
 }
 
 func (r *createProductRequest) validate() api.Fields {
@@ -61,7 +62,7 @@ func (r *createProductRequest) validate() api.Fields {
 		fields.Add("sub_category_name", "sub_category_name is required")
 	}
 
-	if r.RetailPrice < 0 {
+	if r.RetailPrice.IsNegative() {
 		fields.Add("retail_price", "retail_price cannot be negative")
 	}
 
