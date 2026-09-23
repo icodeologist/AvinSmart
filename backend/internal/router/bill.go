@@ -15,6 +15,7 @@ func BillRoutes(db *gorm.DB, cfg config.Config) http.Handler {
 	r := chi.NewRouter()
 	sales := r.With(middleware.RequireAuth(cfg), middleware.RequireRoles("admin", "manager", "sales"))
 	sales.Get("/", bills.ListBills(db))
+	sales.Post("/quote", bills.Quote(db))
 	sales.With(middleware.Idempotent(db)).Post("/", bills.CreateBill(db))
 
 	return r
