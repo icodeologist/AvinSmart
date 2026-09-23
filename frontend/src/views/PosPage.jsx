@@ -1,24 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { fetchProducts, productImagePath } from "../api/productsApi.js";
-import { createOrder, recordPayment } from "../api/ordersApi.js";
+import { createOrder, quoteOrder, recordPayment } from "../api/ordersApi.js";
 
-const money = (value) => `₹${Number(value || 0).toFixed(2)}`;
-
-const selectedPrice = (product, tier) => {
-  if (tier === "wholesale") return product.wholesalePrice;
-  if (tier === "retail") return product.retailPrice;
-  return product.customerPrice;
-};
+const money = (value) => `₹${value ?? "0.00"}`;
 
 function normalizeProduct(product) {
   return {
     id: product.id,
     name: product.title,
     category: product.category?.name || "Other",
-    customerPrice: Number(product.customer_display_price || 0),
-    retailPrice: Number(product.retail_price || 0),
-    wholesalePrice: Number(product.whole_sale_price || 0),
+    customerPrice: product.customer_display_price || "0.00",
     quantityInStock: Number(product.quantity || 0),
     image: productImagePath(product),
   };
@@ -108,7 +100,7 @@ function ProductCatalog({ products, categories, category, search, loading, error
   );
 }
 
-function CartItems({ cart, priceTier, onChangeQuantity }) {
+function CartItems({ cart, quote, onChangeQuantity }) {
   if (!cart.length) {
     return (
       <div className="pos-empty-cart">
@@ -118,14 +110,16 @@ function CartItems({ cart, priceTier, onChangeQuantity }) {
     );
   }
 
+  const lines = Object.fromEntries((quote?.lines || []).map((line) => [line.product_id, line]));
+
   return cart.map((item) => {
-    const unitPrice = selectedPrice(item, priceTier);
+    const line = lines[item.id];
 
     return (
       <div className="pos-cart-item" key={item.id}>
         <div>
           <strong>{item.name}</strong>
-          <small>{money(unitPrice)} each</small>
+          <small>{line ? `${money(line.unit_price)} each` : "Calculating price..."}</small>
         </div>
 
         <div className="pos-quantity">
@@ -134,7 +128,7 @@ function CartItems({ cart, priceTier, onChangeQuantity }) {
           <button type="button" onClick={() => onChangeQuantity(item.id, 1)}>+</button>
         </div>
 
-        <strong>{money(unitPrice * item.quantity)}</strong>
+        <strong>{line ? money(line.amount) : "—"}</strong>
       </div>
     );
   });
@@ -142,11 +136,10 @@ function CartItems({ cart, priceTier, onChangeQuantity }) {
 
 function PaymentSummary({
   priceTier,
+  quote,
   paymentMethod,
   paymentAmount,
   amountDue,
-  customerTotal,
-  discount,
   pendingOrderId,
   submitting,
   notice,
@@ -203,12 +196,12 @@ function PaymentSummary({
       </div>
 
       <div>
-        <span>Price</span>
-        <strong>{money(customerTotal)}</strong>
+        <span>Subtotal</span>
+        <strong>{money(quote?.subtotal)}</strong>
       </div>
       <div>
         <span>Discount</span>
-        <strong className="text-success">- {money(discount)}</strong>
+        <strong className="text-success">- {money(quote?.discount)}</strong>
       </div>
       <div className="pos-total">
         <span>{pendingOrderId ? "Remaining" : "Total"}</span>
@@ -232,8 +225,7 @@ function CartPanel({
   paymentMethod,
   paymentAmount,
   amountDue,
-  customerTotal,
-  discount,
+  quote,
   pendingOrderId,
   submitting,
   notice,
@@ -256,7 +248,7 @@ function CartPanel({
       </div>
 
       <div className="pos-cart-items">
-        <CartItems cart={cart} priceTier={priceTier} onChangeQuantity={onChangeQuantity} />
+        <CartItems cart={cart} quote={quote} onChangeQuantity={onChangeQuantity} />
       </div>
 
       <PaymentSummary
@@ -264,8 +256,7 @@ function CartPanel({
         paymentMethod={paymentMethod}
         paymentAmount={paymentAmount}
         amountDue={amountDue}
-        customerTotal={customerTotal}
-        discount={discount}
+        quote={quote}
         pendingOrderId={pendingOrderId}
         submitting={submitting}
         notice={notice}
@@ -290,6 +281,7 @@ export default function PosPage() {
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [pendingOrderId, setPendingOrderId] = useState(null);
   const [pendingAmountDue, setPendingAmountDue] = useState(0);
+  const [quote, setQuote] = useState(null);
   const [paymentAmount, setPaymentAmount] = useState("");
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
@@ -317,11 +309,20 @@ export default function PosPage() {
     () => ["All", ...new Set(products.map((product) => product.category))],
     [products]
   );
-  const customerTotal = cart.reduce((sum, item) => sum + item.customerPrice * item.quantity, 0);
-  const subtotal = cart.reduce((sum, item) => sum + selectedPrice(item, priceTier) * item.quantity, 0);
-  const discount = Math.max(0, customerTotal - subtotal);
-  const total = subtotal;
-  const amountDue = pendingOrderId ? pendingAmountDue : total;
+  useEffect(() => {
+    if (!cart.length || pendingOrderId) {
+      setQuote(null);
+      return undefined;
+    }
+    let active = true;
+    const backendTier = priceTier === "original" ? "customer_display" : priceTier;
+    quoteOrder({ items: cart.map((item) => ({ product_id: item.id, quantity: item.quantity })), priceTier: backendTier })
+      .then((data) => { if (active) setQuote(data); })
+      .catch((quoteError) => { if (active) setError(quoteError.message); });
+    return () => { active = false; };
+  }, [cart, priceTier, pendingOrderId]);
+
+  const amountDue = pendingOrderId ? pendingAmountDue : quote?.total;
 
   function addToCart(product) {
     setError("");
@@ -358,21 +359,17 @@ export default function PosPage() {
           cashier: staff.name || staff.email,
         });
         orderId = order.id;
-        due = Number(order.amount_due || total);
+        due = order.amount_due;
         setPendingOrderId(orderId);
         setPendingAmountDue(due);
       }
 
-      const amount = Number(paymentAmount || due);
-      if (!Number.isFinite(amount) || amount <= 0 || amount > due + 0.009) {
-        throw new Error(`Enter an amount between ₹0.01 and ${money(due)}.`);
-      }
-
+      const amount = paymentAmount || due;
       const result = await recordPayment(orderId, { amount, method: paymentMethod });
-      const remaining = Number(result.order?.amount_due || 0);
+      const remaining = result.order?.amount_due || "0.00";
       setPaymentAmount("");
 
-      if (remaining > 0) {
+      if (remaining !== "0.00") {
         setPendingAmountDue(remaining);
         setNotice(`Payment recorded. Remaining balance: ${money(remaining)}.`);
       } else {
@@ -394,6 +391,7 @@ export default function PosPage() {
     setPendingOrderId(null);
     setPendingAmountDue(0);
     setPaymentAmount("");
+    setQuote(null);
   }
 
   function logout() {
@@ -427,8 +425,7 @@ export default function PosPage() {
           paymentMethod={paymentMethod}
           paymentAmount={paymentAmount}
           amountDue={amountDue}
-          customerTotal={customerTotal}
-          discount={discount}
+          quote={quote}
           pendingOrderId={pendingOrderId}
           submitting={submitting}
           notice={notice}

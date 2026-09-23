@@ -53,3 +53,26 @@ export async function createBill(bill) {
     throw error;
   }
 }
+
+export async function quoteBill(bill) {
+  const payload = {
+    price_tier: bill.priceTier || "retail",
+    tax_rate: Number(bill.taxRate) || 0,
+    discount: String(bill.discount ?? "0.00"),
+    items: (bill.items || []).map((item) => ({
+      product_id: item.productId || undefined,
+      name: String(item.name || "").trim(),
+      quantity: Number(item.quantity) || 0,
+      unit: item.unit || "pcs",
+    })),
+  };
+  const response = await fetch(`${API_BASE_URL}/bills/quote`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify(payload),
+  });
+  const body = await response.json().catch(() => ({}));
+  const data = unwrap(body);
+  if (!response.ok) throw new Error(body.error || "Could not calculate bill total");
+  return data;
+}

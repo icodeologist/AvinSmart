@@ -27,6 +27,10 @@ export function createOrder({ items, priceTier, cashier }) {
   return post("/orders", { items, price_tier: priceTier, cashier });
 }
 
+export function quoteOrder({ items, priceTier }) {
+  return post("/orders/quote", { items, price_tier: priceTier });
+}
+
 export function recordPayment(orderId, { amount, method }) {
   return post(`/orders/${orderId}/payments`, { amount: String(amount), method });
 }
