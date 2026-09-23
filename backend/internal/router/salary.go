@@ -18,5 +18,10 @@ func SalaryRoutes(db *gorm.DB, cfg config.Config) http.Handler {
 	r.Get("/", salaries.List(db))
 	r.Post("/", salaries.Create(db))
 	r.Patch("/{id}/pay", salaries.MarkPaid(db))
+	r.Get("/attendance", salaries.ListAttendance(db))
+	r.Put("/attendance", salaries.UpsertAttendance(db))
+	r.Get("/leave-requests", salaries.ListLeaveRequests(db))
+	r.Post("/leave-requests", salaries.CreateLeaveRequest(db))
+	r.Patch("/leave-requests/{id}", salaries.UpdateLeaveRequest(db))
 	return r
 }

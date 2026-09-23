@@ -39,6 +39,8 @@ func AutoMigrate(db *gorm.DB) error {
 		&models.Outlet{},
 		&models.Staff{},
 		&models.Salary{},
+		&models.Attendance{},
+		&models.LeaveRequest{},
 		&models.Bill{},
 		&models.BillItem{},
 		&models.Notification{},
