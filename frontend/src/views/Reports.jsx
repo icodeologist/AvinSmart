@@ -4,16 +4,16 @@ import PageHeader from "../components/layout/PageHeader.jsx";
 import { salesOverviewOptions } from "../charts/charts.js";
 
 const statCards = [
-  { title: "Total Revenue", value: "$45,231", trend: "+12% from last month", trendClass: "text-success", icon: "ti ti-arrow-up" },
+  { title: "Total Revenue", value: "₹45,231", trend: "+12% from last month", trendClass: "text-success", icon: "ti ti-arrow-up" },
   { title: "Products Sold", value: "1,234", trend: "8% from last month", trendClass: "text-success", icon: "ti ti-arrow-up" },
   { title: "Low Stock Items", value: "23", trend: "3% from last month", trendClass: "text-danger", icon: "ti ti-arrow-down" },
   { title: "Out of Stock", value: "5", trend: "2% from last month", trendClass: "text-danger", icon: "ti ti-arrow-down" },
 ];
 
 const topProducts = [
-  { image: "./assets/images/product-1.png", name: "Gaming Joy Stick", units: "156 units sold", amount: "$3,120" },
-  { image: "./assets/images/product-2.png", name: "Wireless Headphones", units: "134 units sold", amount: "$2,680" },
-  { image: "./assets/images/product-3.png", name: "Smartwatch", units: "98 units sold", amount: "$1,960" },
+  { image: "./assets/images/product-1.png", name: "Gaming Joy Stick", units: "156 units sold", amount: "₹3,120" },
+  { image: "./assets/images/product-2.png", name: "Wireless Headphones", units: "134 units sold", amount: "₹2,680" },
+  { image: "./assets/images/product-3.png", name: "Smartwatch", units: "98 units sold", amount: "₹1,960" },
 ];
 
 export default function Reports() {

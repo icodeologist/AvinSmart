@@ -40,10 +40,10 @@ function useChart(targetRef, options) {
 }
 
 const statCards = [
-  { title: "Total Sales", value: "$25,000", trend: "+5% since last month", color: "primary", icon: "ti ti-report-analytics" },
-  { title: "Total Purchase", value: "$18,000", trend: "+22% since last month", color: "success", icon: "ti ti-repeat" },
-  { title: "Total Expenses", value: "$9,000", trend: "+10% since last month", color: "info", icon: "ti ti-currency-dollar" },
-  { title: "Invoice Due", value: "$25,000", trend: "+35% since last month", color: "warning", icon: "ti ti-notes" },
+  { title: "Total Sales", value: "₹25,000", trend: "+5% since last month", color: "primary", icon: "ti ti-report-analytics" },
+  { title: "Total Purchase", value: "₹18,000", trend: "+22% since last month", color: "success", icon: "ti ti-repeat" },
+  { title: "Total Expenses", value: "₹9,000", trend: "+10% since last month", color: "info", icon: "ti ti-currency-dollar" },
+  { title: "Invoice Due", value: "₹25,000", trend: "+35% since last month", color: "warning", icon: "ti ti-notes" },
 ];
 
 function StatCard({ card }) {

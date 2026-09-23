@@ -10,7 +10,7 @@ const emptyState = document.getElementById("salaryEmpty");
 const searchInput = document.getElementById("salarySearch");
 const statusSelect = document.getElementById("salaryStatus");
 
-const currency = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+const currency = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 });
 
 function formatDate(value) {
   return new Date(value).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });

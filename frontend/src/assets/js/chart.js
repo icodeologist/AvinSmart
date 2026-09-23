@@ -91,7 +91,7 @@ document.addEventListener('DOMContentLoaded', () => {
           },
         },
         title: {
-          text: '$ (thousands)' ,
+        text: '₹ (thousands)' ,
         },
       },
       fill: {
@@ -100,7 +100,7 @@ document.addEventListener('DOMContentLoaded', () => {
      tooltip: {
     			y: {
     				formatter: function (val) {
-    					return "$ " + val + " thousands"
+                    return "₹ " + val + " thousands"
     				}
     			}
     		},

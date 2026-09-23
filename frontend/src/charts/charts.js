@@ -84,7 +84,7 @@ export function salesPurchaseOptions() {
         },
       },
       title: {
-        text: "$ (thousands)",
+        text: "₹ (thousands)",
       },
     },
     fill: {
@@ -93,7 +93,7 @@ export function salesPurchaseOptions() {
     tooltip: {
       y: {
         formatter: function (value) {
-          return "$ " + value + " thousands";
+          return "₹ " + value + " thousands";
         },
       },
     },

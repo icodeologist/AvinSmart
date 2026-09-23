@@ -3,7 +3,7 @@ const API_BASE_URL = "http://localhost:8080/api/v1";
 let allProducts = [];
 
 function formatPrice(value) {
-  return `$${Number(value || 0).toFixed(2)}`;
+  return `₹${Number(value || 0).toFixed(2)}`;
 }
 
 function productImagePath(product) {
