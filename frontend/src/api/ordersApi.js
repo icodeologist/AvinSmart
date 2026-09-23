@@ -28,5 +28,5 @@ export function createOrder({ items, priceTier, cashier }) {
 }
 
 export function recordPayment(orderId, { amount, method }) {
-  return post(`/orders/${orderId}/payments`, { amount, method });
+  return post(`/orders/${orderId}/payments`, { amount: String(amount), method });
 }

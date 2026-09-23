@@ -69,10 +69,10 @@ export default function CreateProduct() {
         sub_category_name: subCategory,
         description: form.productDescription.value,
         unit: form.productUnit.value,
-        retail_price: Number(form.productPrice.value),
-        customer_display_price: Number(form.productCustomerDisplayPrice.value),
-        bought_price: Number(form.productBoughtPrice.value),
-        whole_sale_price: Number(form.productWholeSalePrice.value),
+        retail_price: form.productPrice.value,
+        customer_display_price: form.productCustomerDisplayPrice.value || "0.00",
+        bought_price: form.productBoughtPrice.value || "0.00",
+        whole_sale_price: form.productWholeSalePrice.value || "0.00",
         image_base64: await readFileAsDataURI(imageInput.files[0]),
       });
 
