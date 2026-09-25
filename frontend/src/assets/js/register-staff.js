@@ -2,41 +2,6 @@ const API_BASE_URL = window.__AVINSMART_API_BASE_URL__ || "/api/v1";
 
 let allStaff = [];
 
-const dummyStaff = [
-  {
-    name: "John Doe",
-    email: "john@avinsmart.com",
-    phone: "+1 (512) 555-0134",
-    role: "manager",
-    status: "active",
-    joinedOn: "2024-03-15",
-  },
-  {
-    name: "Jane Smith",
-    email: "jane@avinsmart.com",
-    phone: "+1 (512) 555-0178",
-    role: "sales",
-    status: "active",
-    joinedOn: "2024-05-22",
-  },
-  {
-    name: "Mike Johnson",
-    email: "mike@avinsmart.com",
-    phone: "+1 (214) 555-0199",
-    role: "support",
-    status: "locked",
-    joinedOn: "2025-01-10",
-  },
-  {
-    name: "Sarah Williams",
-    email: "sarah@avinsmart.com",
-    phone: "+1 (713) 555-0155",
-    role: "inventory",
-    status: "inactive",
-    joinedOn: "2025-06-30",
-  },
-];
-
 function formatStaffDate(value) {
   if (!value) return '<span class="text-muted">&mdash;</span>';
   return new Date(value).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
@@ -103,7 +68,7 @@ async function loadStaff() {
 
     allStaff = data;
   } catch (error) {
-    allStaff = dummyStaff.map((member) => ({ ...member }));
+    allStaff = [];
   }
 
   renderStaff(allStaff);
@@ -135,18 +100,13 @@ if (registerStaffForm) {
         }
         return response.json();
       })
-      .then((created) => {
-        allStaff.unshift({ ...staff, joinedOn: new Date().toISOString().slice(0, 10), _localOnly: true });
+      .then(() => {
+        allStaff.unshift(staff);
         renderStaff(allStaff);
         registerStaffForm.reset();
         flashSuccess();
       })
-      .catch(() => {
-        allStaff.unshift({ ...staff, joinedOn: new Date().toISOString().slice(0, 10), _localOnly: true });
-        renderStaff(allStaff);
-        registerStaffForm.reset();
-        flashSuccess();
-      });
+      .catch((error) => console.error(error));
   });
 }
 

@@ -7,12 +7,13 @@ import react from '@vitejs/plugin-react'
 // the React SPA. Rewrite these clean routes back to the SPA shell (index.html)
 // so the dev server behaves like the built app.
 const spaCleanRoutes = new Set([
-  '/', '/inventory', '/products/create', '/categories/add', '/outlets',
+  '/', '/inventory', '/products/create', '/categories/add', '/outlets', '/outlets/categories/add',
   '/reports', '/docs', '/login', '/signup', '/signin', '/404',
 ])
 
 const isSpaCleanRoute = (path) => {
   if (spaCleanRoutes.has(path)) return true;
+  if (/^\/outlets\/\d+(?:\/products\/create)?$/.test(path)) return true;
   if (path.startsWith('/staff')) {
     const last = path.slice('/staff'.length).split('?')[0];
     return last === '' || last === '/' || /^\/[A-Za-z0-9-_]+$/.test(last);

@@ -2,41 +2,6 @@ const API_BASE_URL = window.__AVINSMART_API_BASE_URL__ || "/api/v1";
 
 let allStaff = [];
 
-const dummyStaff = [
-  {
-    name: "John Doe",
-    email: "john@avinsmart.com",
-    phone: "+1 (512) 555-0134",
-    role: "manager",
-    status: "active",
-    joinedOn: "2024-03-15",
-  },
-  {
-    name: "Jane Smith",
-    email: "jane@avinsmart.com",
-    phone: "+1 (512) 555-0178",
-    role: "sales",
-    status: "active",
-    joinedOn: "2024-05-22",
-  },
-  {
-    name: "Mike Johnson",
-    email: "mike@avinsmart.com",
-    phone: "+1 (214) 555-0199",
-    role: "support",
-    status: "locked",
-    joinedOn: "2025-01-10",
-  },
-  {
-    name: "Sarah Williams",
-    email: "sarah@avinsmart.com",
-    phone: "+1 (713) 555-0155",
-    role: "inventory",
-    status: "inactive",
-    joinedOn: "2025-06-30",
-  },
-];
-
 const staffGrid = document.getElementById("staffGrid");
 
 function statusBadge(status) {
@@ -110,7 +75,7 @@ async function loadStaff() {
 
     allStaff = data;
   } catch (error) {
-    allStaff = dummyStaff.map((member) => ({ ...member }));
+    allStaff = [];
   }
 
   renderStaff(allStaff);

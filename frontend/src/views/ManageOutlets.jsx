@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import PageHeader from "../components/layout/PageHeader.jsx";
 import { fetchOutlets, createOutlet } from "../api/outletsApi.js";
 import { outletStatusBadge } from "../ui/format.jsx";
@@ -75,6 +76,9 @@ export default function ManageOutlets() {
   return (
     <>
       <PageHeader title="Manage Outlets" subtitle="View and manage your branches and outlets">
+        <Link to="/outlets/categories/add" className="btn btn-outline-primary">
+          <i className="ti ti-category-plus"></i> Add Category
+        </Link>
         <button className="btn btn-primary" onClick={scrollToForm}>
           <i className="ti ti-plus"></i> Add Outlet
         </button>
@@ -179,12 +183,12 @@ export default function ManageOutlets() {
                     outlets.map((outlet) => (
                       <tr className="align-middle" key={`${outlet.name}-${outlet.addedOn}`}>
                         <td>
-                          <a href="#" className="d-flex align-items-center gap-2 text-decoration-none text-reset">
+                          <Link to={`/outlets/${outlet.id}`} className="d-flex align-items-center gap-2 text-decoration-none text-reset">
                             <span className="icon-shape icon-sm bg-primary bg-opacity-10 text-primary rounded-2">
                               <i className="ti ti-building-store"></i>
                             </span>
                             <span className="fw-semibold">{outlet.name}</span>
-                          </a>
+                          </Link>
                         </td>
                         <td>{outlet.location}</td>
                         <td>
@@ -195,8 +199,7 @@ export default function ManageOutlets() {
                         <td>{formatOutletDate(outlet.addedOn)}</td>
                         <td>{formatOutletDate(outlet.lockedSince)}</td>
                         <td>
-                          <a href="#" title="Edit"><i className="ti ti-edit"></i></a>
-                          <a href="#" className="link-danger ms-2" title="Delete"><i className="ti ti-trash"></i></a>
+                          <Link to={`/outlets/${outlet.id}`} className="btn btn-sm btn-outline-primary">Select Outlet</Link>
                         </td>
                       </tr>
                     ))

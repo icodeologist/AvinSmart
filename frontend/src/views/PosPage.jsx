@@ -102,6 +102,12 @@ function ProductCatalog({ products, categories, category, search, loading, error
           </button>
         ))}
       </div>
+
+      {!loading && !error && search.trim() && !visibleProducts.length && (
+        <div className="alert alert-warning mt-3" role="status">
+          No products found for “{search.trim()}”. Try a different product name or clear the search.
+        </div>
+      )}
     </section>
   );
 }

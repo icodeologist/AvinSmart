@@ -33,8 +33,8 @@ export default function AddCategory() {
   return (
     <>
       <PageHeader title="Add Category" subtitle="Create product categories for your inventory">
-        <Link to="/inventory" className="btn btn-primary">
-          Go to Inventory List
+        <Link to="/outlets" className="btn btn-primary">
+          <i className="ti ti-arrow-left"></i> Back to Manage Outlets
         </Link>
       </PageHeader>
 

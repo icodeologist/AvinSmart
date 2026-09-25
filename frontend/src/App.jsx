@@ -1,4 +1,4 @@
-import { Routes, Route } from "react-router-dom";
+import { Navigate, Routes, Route } from "react-router-dom";
 import AppLayout from "./components/layout/AppLayout.jsx";
 import Dashboard from "./views/Dashboard.jsx";
 import CreateBill from "./views/CreateBill.jsx";
@@ -6,6 +6,7 @@ import Inventory from "./views/Inventory.jsx";
 import CreateProduct from "./views/CreateProduct.jsx";
 import AddCategory from "./views/AddCategory.jsx";
 import ManageOutlets from "./views/ManageOutlets.jsx";
+import OutletProducts from "./views/OutletProducts.jsx";
 import Reports from "./views/Reports.jsx";
 import Docs from "./views/Docs.jsx";
 import ManageStaff from "./views/ManageStaff.jsx";
@@ -26,9 +27,12 @@ export default function App() {
       <Route element={<AppLayout />}>
         <Route path="/" element={<Dashboard />} />
         <Route path="/inventory" element={<Inventory />} />
-        <Route path="/products/create" element={<CreateProduct />} />
-        <Route path="/categories/add" element={<AddCategory />} />
+        <Route path="/products/create" element={<Navigate to="/outlets" replace />} />
+        <Route path="/categories/add" element={<Navigate to="/outlets" replace />} />
         <Route path="/outlets" element={<ManageOutlets />} />
+        <Route path="/outlets/categories/add" element={<AddCategory />} />
+        <Route path="/outlets/:outletId" element={<OutletProducts />} />
+        <Route path="/outlets/:outletId/products/create" element={<CreateProduct />} />
         <Route path="/reports" element={<Reports />} />
         <Route path="/cash-flow" element={<CashFlow />} />
         <Route path="/profile" element={<AdminProfile />} />

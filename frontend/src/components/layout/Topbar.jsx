@@ -3,11 +3,17 @@ import { useEffect, useState } from "react";
 import { getAdminToken } from "../../api/config.js";
 import { fetchNotifications, fetchUnreadCount, markAllNotificationsRead, markNotificationRead } from "../../api/notificationsApi.js";
 
+function storedAdmin() {
+  try { return JSON.parse(localStorage.getItem("admin") || "null"); } catch { return null; }
+}
+
 export default function Topbar({ onToggle, onMobileOpen }) {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState([]);
   const [unread, setUnread] = useState(0);
+  const admin = storedAdmin();
+  const adminName = admin?.username || admin?.name || admin?.email || "Account";
 
   async function refresh() {
     if (!getAdminToken()) return;
@@ -57,7 +63,7 @@ export default function Topbar({ onToggle, onMobileOpen }) {
           {items.length ? items.map((item) => <button key={item.id} type="button" className={`dropdown-item text-wrap p-3 border-bottom ${item.read_at ? "" : "bg-primary-subtle"}`} onClick={() => read(item)}><strong className="d-block">{item.title}</strong><span className="badge text-bg-light text-capitalize my-1">{item.type || "general"}</span><small className="text-muted d-block">{item.message}</small></button>) : <div className="p-3 text-muted small">No notifications yet.</div>}
           <Link to="/notifications" className="d-block text-center p-2 small" onClick={() => setOpen(false)}>View all notifications</Link>
         </div> : null}
-        <Link to="/profile" className="d-flex align-items-center gap-2 text-decoration-none" aria-label="Open admin profile"><span className="d-none d-md-block text-end"><strong className="d-block small text-dark">Avin Gowda</strong><small className="text-muted">Administrator</small></span><img src="/assets/images/avatar/avatar-1.jpg" alt="Avin Gowda" className="avatar avatar-sm rounded-circle" /></Link>
+        <Link to="/profile" className="d-flex align-items-center gap-2 text-decoration-none" aria-label="Open admin profile"><span className="d-none d-md-block text-end"><strong className="d-block small text-dark">{adminName}</strong><small className="text-muted">Administrator</small></span><img src="/assets/images/avatar/avatar-1.jpg" alt={adminName} className="avatar avatar-sm rounded-circle" /></Link>
       </div>
     </nav>
   );

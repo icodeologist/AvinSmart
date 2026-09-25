@@ -1,12 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import PageHeader from "../components/layout/PageHeader.jsx";
-import { createProduct, subCategoriesByCategory } from "../api/productsApi.js";
+import { createProduct } from "../api/productsApi.js";
 import { fetchCategories } from "../api/categoriesApi.js";
-
-function productImagesByCategory(category) {
-  return subCategoriesByCategory[category] || [];
-}
+import { fetchOutlets } from "../api/outletsApi.js";
 
 function readFileAsDataURI(file) {
   return new Promise((resolve, reject) => {
@@ -22,6 +19,8 @@ function readFileAsDataURI(file) {
 }
 
 export default function CreateProduct() {
+  const { outletId } = useParams();
+  const numericOutletId = Number(outletId);
   const formRef = useRef(null);
   const [validated, setValidated] = useState(false);
   const [category, setCategory] = useState("");
@@ -30,6 +29,9 @@ export default function CreateProduct() {
   const [subCategory, setSubCategory] = useState("");
   const [alert, setAlert] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const [outlet, setOutlet] = useState(null);
+  const [outletLoading, setOutletLoading] = useState(true);
+  const [outletError, setOutletError] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -39,11 +41,40 @@ export default function CreateProduct() {
     return () => { cancelled = true; };
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!Number.isInteger(numericOutletId) || numericOutletId <= 0) {
+      setOutletError("Select an outlet from Manage Outlets before adding a product.");
+      setOutletLoading(false);
+      return () => { cancelled = true; };
+    }
+
+    fetchOutlets()
+      .then((outlets) => {
+        if (cancelled) return;
+        const selectedOutlet = outlets.find((item) => item.id === numericOutletId);
+        if (!selectedOutlet) {
+          setOutletError("This outlet is not available to your account.");
+          return;
+        }
+        setOutlet(selectedOutlet);
+      })
+      .catch((error) => {
+        if (!cancelled) setOutletError(error.message);
+      })
+      .finally(() => {
+        if (!cancelled) setOutletLoading(false);
+      });
+
+    return () => { cancelled = true; };
+  }, [numericOutletId]);
+
   function handleCategoryChange(event) {
     const value = event.target.value;
     setCategory(value);
     const selectedCategory = categories.find((item) => item.name === value);
-    setSubCategories(selectedCategory ? selectedCategory.subCategories : productImagesByCategory(value).map((name) => ({ name })));
+    setSubCategories(selectedCategory ? selectedCategory.subCategories : []);
     setSubCategory("");
   }
 
@@ -57,11 +88,17 @@ export default function CreateProduct() {
 
     const imageInput = form.productImage;
 
+    if (!outlet || outlet.status !== "active") {
+      setAlert({ type: "danger", message: "Select an active outlet before adding a product." });
+      return;
+    }
+
     setSubmitting(true);
     setAlert(null);
 
     try {
       await createProduct({
+        outlet_id: outlet.id,
         title: form.productName.value,
         sku_id: form.productSKU.value,
         quantity: Number(form.productStock.value),
@@ -89,11 +126,37 @@ export default function CreateProduct() {
     }
   }
 
+  if (outletLoading) {
+    return <div className="alert alert-info">Loading outlet...</div>;
+  }
+
+  if (!outlet) {
+    return (
+      <>
+        <PageHeader title="Add Product" subtitle="Products must be added from an outlet">
+          <Link to="/outlets" className="btn btn-sm btn-outline-secondary">Back to Outlets</Link>
+        </PageHeader>
+        <div className="alert alert-danger" role="alert">{outletError}</div>
+      </>
+    );
+  }
+
+  if (outlet.status !== "active") {
+    return (
+      <>
+        <PageHeader title={`Add Product to ${outlet.name}`} subtitle="Products can only be added to active outlets">
+          <Link to={`/outlets/${outlet.id}`} className="btn btn-sm btn-outline-secondary">Back to Outlet</Link>
+        </PageHeader>
+        <div className="alert alert-warning" role="alert">This outlet is {outlet.status}. Activate it before adding products.</div>
+      </>
+    );
+  }
+
   return (
     <>
-      <PageHeader title="Add Inventory" subtitle="Manage your inventory items">
-        <Link to="/inventory" className="btn btn-sm btn-primary">
-          <i className="ti ti-box-seam"></i> Go to Inventory List
+      <PageHeader title={`Add Product to ${outlet.name}`} subtitle="This product will belong to the selected outlet">
+        <Link to={`/outlets/${outlet.id}`} className="btn btn-sm btn-outline-secondary">
+          <i className="ti ti-arrow-left"></i> Back to Outlet
         </Link>
       </PageHeader>
 

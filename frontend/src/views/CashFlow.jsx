@@ -2,23 +2,8 @@ import { useMemo, useState } from "react";
 import PageHeader from "../components/layout/PageHeader.jsx";
 
 const today = new Date();
-const isoDate = (daysAgo) => {
-  const date = new Date(today);
-  date.setDate(date.getDate() - daysAgo);
-  return date.toISOString().slice(0, 10);
-};
 const currentDate = today.toISOString().slice(0, 10);
 const currentTime = today.toTimeString().slice(0, 5);
-
-const initialEntries = [
-  { id: 1, date: isoDate(1), time: "10:15", party: "Shop sales", description: "Daily counter sales", credit: 8600, debit: 0 },
-  { id: 2, date: isoDate(1), time: "13:40", party: "Milk Supplier", description: "Milk stock purchase", credit: 0, debit: 4200 },
-  { id: 3, date: isoDate(3), time: "16:20", party: "Shop sales", description: "UPI customer receipts", credit: 5200, debit: 0 },
-  { id: 4, date: isoDate(4), time: "11:05", party: "Ravi Transport", description: "Delivery charges", credit: 0, debit: 1800 },
-  { id: 5, date: isoDate(8), time: "15:10", party: "Packaging Vendor", description: "Boxes and carry bags", credit: 0, debit: 3500 },
-  { id: 6, date: isoDate(12), time: "18:30", party: "Shop sales", description: "Weekend counter sales", credit: 11200, debit: 0 },
-  { id: 7, date: isoDate(17), time: "09:45", party: "Electricity Office", description: "Monthly electricity bill", credit: 0, debit: 2400 },
-];
 
 function formatMoney(value) {
   return `₹${Number(value || 0).toFixed(2)}`;
@@ -29,8 +14,8 @@ function formatDate(value) {
 }
 
 export default function CashFlow() {
-  const [openingBalance, setOpeningBalance] = useState(25000);
-  const [entries, setEntries] = useState(initialEntries);
+  const [openingBalance, setOpeningBalance] = useState(0);
+  const [entries, setEntries] = useState([]);
   const [period, setPeriod] = useState("all");
   const [form, setForm] = useState({ date: currentDate, time: currentTime, party: "", description: "", type: "debit", amount: "" });
 

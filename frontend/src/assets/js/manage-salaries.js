@@ -1,9 +1,4 @@
-const salaryRecords = [
-  { name: "John Doe", email: "john@avinsmart.com", role: "Manager", salary: 4200, lastPaid: "2026-08-30", status: "paid" },
-  { name: "Jane Smith", email: "jane@avinsmart.com", role: "Sales", salary: 3200, lastPaid: "2026-08-30", status: "paid" },
-  { name: "Mike Johnson", email: "mike@avinsmart.com", role: "Support", salary: 2850, lastPaid: "2026-07-30", status: "pending" },
-  { name: "Sarah Williams", email: "sarah@avinsmart.com", role: "Inventory", salary: 3000, lastPaid: "2026-08-30", status: "paid" },
-];
+const salaryRecords = [];
 
 const tableBody = document.getElementById("salaryTableBody");
 const emptyState = document.getElementById("salaryEmpty");

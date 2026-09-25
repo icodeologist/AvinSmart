@@ -65,6 +65,10 @@ func (r *createProductRequest) validate() api.Fields {
 		fields.Add("sub_category_name", "sub_category_name is required")
 	}
 
+	if r.OutletID == nil || *r.OutletID == 0 {
+		fields.Add("outlet_id", "outlet_id is required")
+	}
+
 	if r.RetailPrice.IsNegative() {
 		fields.Add("retail_price", "retail_price cannot be negative")
 	}
@@ -94,21 +98,10 @@ func CreateProduct(db *gorm.DB) http.HandlerFunc {
 			return
 		}
 
-		outletID := payload.OutletID
-		if outletID == nil || *outletID == 0 {
-			resolved, err := outletaccess.Resolve(db, principal, nil)
-			if err != nil {
-				writeOutletError(w, err)
-				return
-			}
-			outletID = &resolved
-		} else {
-			resolved, err := outletaccess.Resolve(db, principal, outletID)
-			if err != nil {
-				writeOutletError(w, err)
-				return
-			}
-			outletID = &resolved
+		outletID, err := outletaccess.Resolve(db, principal, payload.OutletID)
+		if err != nil {
+			writeOutletError(w, err)
+			return
 		}
 
 		imageURL := ""
@@ -139,7 +132,7 @@ func CreateProduct(db *gorm.DB) http.HandlerFunc {
 		product := models.Product{
 			Title:                payload.Title,
 			Description:          payload.Description,
-			OutletID:             *outletID,
+			OutletID:             outletID,
 			CategoryID:           category.ID,
 			SubCategoryID:        &subCategory.ID,
 			SKUID:                payload.SKUID,

@@ -2,69 +2,6 @@ const API_BASE_URL = window.__AVINSMART_API_BASE_URL__ || "/api/v1";
 
 let allOutlets = [];
 
-const dummyOutlets = [
-  {
-    name: "Downtown Branch",
-    location: "12 Main Street, Austin, TX",
-    contact: "Maria Gonzalez",
-    phone: "+1 (512) 555-0134",
-    email: "maria@avinsmart.com",
-    status: "active",
-    addedOn: "2024-01-15",
-    lockedSince: null,
-  },
-  {
-    name: "Westside Mall Outlet",
-    location: "Westside Mall, Suite 210, Dallas, TX",
-    contact: "James Carter",
-    phone: "+1 (972) 555-0178",
-    email: "james@avinsmart.com",
-    status: "active",
-    addedOn: "2024-03-22",
-    lockedSince: null,
-  },
-  {
-    name: "Airport Kiosk",
-    location: "Terminal B, DFW International Airport",
-    contact: "Sofia Rodriguez",
-    phone: "+1 (214) 555-0199",
-    email: "sofia@avinsmart.com",
-    status: "locked",
-    addedOn: "2024-06-10",
-    lockedSince: "2026-01-08",
-  },
-  {
-    name: "Northgate Store",
-    location: "88 Northgate Plaza, Houston, TX",
-    contact: "Daniel Kim",
-    phone: "+1 (713) 555-0155",
-    email: "daniel@avinsmart.com",
-    status: "inactive",
-    addedOn: "2024-08-01",
-    lockedSince: null,
-  },
-  {
-    name: "University Corner",
-    location: "5 Campus Drive, San Antonio, TX",
-    contact: "Alisha Patel",
-    phone: "+1 (210) 555-0122",
-    email: "alisha@avinsmart.com",
-    status: "active",
-    addedOn: "2025-02-18",
-    lockedSince: null,
-  },
-  {
-    name: "Riverside Branch",
-    location: "440 Riverside Blvd, Houston, TX",
-    contact: "Peter Nguyen",
-    phone: "+1 (281) 555-0144",
-    email: "peter@avinsmart.com",
-    status: "locked",
-    addedOn: "2025-05-05",
-    lockedSince: "2026-07-30",
-  },
-];
-
 const tableBody = document.getElementById("outletsTableBody");
 const successAlert = document.getElementById("outletSuccess");
 
@@ -150,7 +87,7 @@ async function loadOutlets() {
 
     allOutlets = data.map(normalizeOutlet);
   } catch (error) {
-    allOutlets = dummyOutlets.map((outlet) => ({ ...outlet }));
+    allOutlets = [];
   }
 
   renderOutlets(allOutlets);
@@ -189,22 +126,7 @@ if (addOutletForm) {
         addOutletForm.reset();
         flashSuccess();
       })
-      .catch(() => {
-        allOutlets.unshift({
-          name: outlet.name,
-          location: outlet.location,
-          contact: outlet.contact_person,
-          phone: outlet.phone,
-          email: outlet.email,
-          status: outlet.status,
-          addedOn: new Date().toISOString().slice(0, 10),
-          lockedSince: outlet.status === "locked" ? new Date().toISOString().slice(0, 10) : null,
-          _localOnly: true,
-        });
-        renderOutlets(allOutlets);
-        addOutletForm.reset();
-        flashSuccess();
-      });
+      .catch((error) => console.error(error));
   });
 }
 

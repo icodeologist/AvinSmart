@@ -50,8 +50,8 @@ export default function Inventory() {
   return (
     <>
       <PageHeader title="Inventory" subtitle="Manage your product inventory">
-        <Link to="/products/create" className="btn btn-sm btn-primary">
-          <i className="ti ti-plus"></i> Add Product
+        <Link to="/outlets" className="btn btn-sm btn-primary">
+          <i className="ti ti-building-store"></i> Select Outlet to Add Product
         </Link>
       </PageHeader>
 

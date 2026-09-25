@@ -11,6 +11,11 @@ function newIdempotencyKey() {
     : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
+function normalizeOutletId(outletId) {
+  const numericOutletId = Number(outletId);
+  return Number.isInteger(numericOutletId) && numericOutletId > 0 ? numericOutletId : null;
+}
+
 async function post(path, payload) {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     method: "POST",
@@ -24,11 +29,11 @@ async function post(path, payload) {
 }
 
 export function createOrder({ items, priceTier, cashier, outletId }) {
-  return post("/orders", { items, price_tier: priceTier, cashier, outlet_id: outletId });
+  return post("/orders", { items, price_tier: priceTier, cashier, outlet_id: normalizeOutletId(outletId) });
 }
 
 export function quoteOrder({ items, priceTier, outletId }) {
-  return post("/orders/quote", { items, price_tier: priceTier, outlet_id: outletId });
+  return post("/orders/quote", { items, price_tier: priceTier, outlet_id: normalizeOutletId(outletId) });
 }
 
 export function recordPayment(orderId, { amount, method, cashTendered }) {

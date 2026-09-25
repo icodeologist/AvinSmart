@@ -1,11 +1,5 @@
 import { API_BASE_URL, getAdminToken, getPosToken, unwrap } from "./config.js";
 
-export const subCategoriesByCategory = {
-  electronics: ["Mobile Phones", "Laptops", "Accessories"],
-  clothing: ["Men", "Women", "Kids"],
-  food: ["Snacks", "Beverages", "Groceries"],
-};
-
 export function formatPrice(value) {
   return `₹${Number(value || 0).toFixed(2)}`;
 }
