@@ -1,11 +1,13 @@
-const currency = new Intl.NumberFormat("en-IN", {
-  style: "currency",
-  currency: "INR",
-  maximumFractionDigits: 0,
-});
-
-export function formatCurrency(value) {
-  return currency.format(value);
+export function formatCurrency(value, currencyCode = "INR") {
+  try {
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: currencyCode,
+      maximumFractionDigits: 2,
+    }).format(Number(value || 0));
+  } catch {
+    return `${currencyCode} ${Number(value || 0).toFixed(2)}`;
+  }
 }
 
 export function formatDate(value) {

@@ -7,21 +7,21 @@ export default function SalarySummary({ summary }) {
         <span className="salary-summary__icon text-primary bg-primary-subtle"><i className="ti ti-cash"></i></span>
         <div>
           <p>Total monthly payroll</p>
-          <strong>{formatCurrency(summary.total)}</strong>
+          <strong>{formatCurrency(summary.total, summary.currency)}</strong>
         </div>
       </article>
       <article className="salary-summary__card">
         <span className="salary-summary__icon text-success bg-success-subtle"><i className="ti ti-circle-check"></i></span>
         <div>
           <p>Paid this month</p>
-          <strong>{formatCurrency(summary.paid)}</strong>
+          <strong>{formatCurrency(summary.paid, summary.currency)}</strong>
         </div>
       </article>
       <article className="salary-summary__card">
         <span className="salary-summary__icon text-warning bg-warning-subtle"><i className="ti ti-clock"></i></span>
         <div>
           <p>Pending payments</p>
-          <strong>{formatCurrency(summary.pending)}</strong>
+          <strong>{formatCurrency(summary.pending, summary.currency)}</strong>
         </div>
       </article>
       <article className="salary-summary__card">

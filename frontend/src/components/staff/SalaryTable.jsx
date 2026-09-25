@@ -32,7 +32,7 @@ export default function SalaryTable({ records, onMarkPaid }) {
                 </div>
               </td>
               <td>{record.role}</td>
-              <td className="fw-semibold">{formatCurrency(record.salary)}</td>
+              <td className="fw-semibold">{formatCurrency(record.salary, record.currency)}</td>
               <td>{formatDate(record.lastPaid)}</td>
               <td>{salaryStatusBadge(record.status)}</td>
               <td className="text-end">
