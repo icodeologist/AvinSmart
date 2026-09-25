@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { loginStaff } from "../api/staffApi.js";
+import { POS_SESSION_KEY } from "../api/config.js";
 
 export default function PosLogin() {
   const navigate = useNavigate();
@@ -13,7 +14,7 @@ export default function PosLogin() {
     setError("");
     try {
       const result = await loginStaff(email, password);
-      localStorage.setItem("token", result.token);
+      localStorage.setItem(POS_SESSION_KEY, result.token);
       sessionStorage.setItem("avinSmartPosStaff", JSON.stringify(result.user));
       navigate("/pos");
     } catch (loginError) {

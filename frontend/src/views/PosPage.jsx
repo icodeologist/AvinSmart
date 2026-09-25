@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { fetchProducts, productImagePath } from "../api/productsApi.js";
 import { cancelOrder, createOrder, quoteOrder, recordPayment } from "../api/ordersApi.js";
+import { POS_SESSION_KEY } from "../api/config.js";
 
 const money = (value) => `₹${value ?? "0.00"}`;
 
@@ -319,7 +320,7 @@ export default function PosPage() {
   useEffect(() => {
     let active = true;
 
-    fetchProducts("", outletId)
+    fetchProducts("", outletId, "pos")
       .then((data) => {
         if (active) setProducts(data.map(normalizeProduct));
       })
@@ -448,7 +449,7 @@ export default function PosPage() {
 
   function logout() {
     sessionStorage.removeItem("avinSmartPosStaff");
-    localStorage.removeItem("token");
+    localStorage.removeItem(POS_SESSION_KEY);
     navigate("/pos/login");
   }
 

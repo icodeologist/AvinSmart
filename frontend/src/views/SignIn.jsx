@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { login } from "../api/authApi.js";
+import { ADMIN_SESSION_KEY } from "../api/config.js";
 
 export default function SignIn() {
   const navigate = useNavigate();
@@ -29,7 +30,7 @@ export default function SignIn() {
         password: form.password.value,
       });
 
-      localStorage.setItem("token", data.token);
+      localStorage.setItem(ADMIN_SESSION_KEY, data.token);
       localStorage.setItem("admin", JSON.stringify(data.user));
       setAlert({ type: "success", message: "Login successful. Redirecting to dashboard..." });
       setTimeout(() => navigate("/"), 600);

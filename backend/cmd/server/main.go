@@ -14,6 +14,9 @@ import (
 func main() {
 	ctx := context.Background()
 	cfg := config.Load()
+	if err := cfg.Validate(); err != nil {
+		log.Fatalf("invalid server configuration: %v", err)
+	}
 
 	db, err := database.Connect(ctx, cfg.DatabaseURL)
 	if err != nil {

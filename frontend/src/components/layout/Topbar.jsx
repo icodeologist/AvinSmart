@@ -1,5 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { getAdminToken } from "../../api/config.js";
 import { fetchNotifications, fetchUnreadCount, markAllNotificationsRead, markNotificationRead } from "../../api/notificationsApi.js";
 
 export default function Topbar({ onToggle, onMobileOpen }) {
@@ -9,7 +10,7 @@ export default function Topbar({ onToggle, onMobileOpen }) {
   const [unread, setUnread] = useState(0);
 
   async function refresh() {
-    if (!localStorage.getItem("token")) return;
+    if (!getAdminToken()) return;
     try { setUnread(await fetchUnreadCount()); if (open) setItems(await fetchNotifications(5)); } catch { /* dashboard remains usable if notifications are unavailable */ }
   }
 

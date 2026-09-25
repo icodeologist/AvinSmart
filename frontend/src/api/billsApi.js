@@ -1,7 +1,7 @@
-import { API_BASE_URL, unwrap } from "./config.js";
+import { API_BASE_URL, getAdminToken, unwrap } from "./config.js";
 
 function authHeaders() {
-  const token = localStorage.getItem("token");
+  const token = getAdminToken();
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 

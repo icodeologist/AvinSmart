@@ -1,4 +1,4 @@
-const API_BASE_URL = "http://localhost:8080/api/v1";
+const API_BASE_URL = window.__AVINSMART_API_BASE_URL__ || "/api/v1";
 
 let allProducts = [];
 
@@ -16,7 +16,7 @@ function productImagePath(product) {
   }
 
   if (product.image.startsWith("/static/")) {
-    return new URL(API_BASE_URL).origin + product.image;
+    return new URL(API_BASE_URL, window.location.origin).origin + product.image;
   }
 
   if (product.image.startsWith("./")) {

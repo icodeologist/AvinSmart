@@ -1,4 +1,4 @@
-import { API_BASE_URL, unwrap } from "./config.js";
+import { API_BASE_URL, getAdminToken, getPosToken, unwrap } from "./config.js";
 
 export const subCategoriesByCategory = {
   electronics: ["Mobile Phones", "Laptops", "Accessories"],
@@ -20,7 +20,7 @@ export function productImagePath(product) {
   }
 
   if (product.image.startsWith("/static/")) {
-    return new URL(API_BASE_URL).origin + product.image;
+    return new URL(API_BASE_URL, window.location.origin).origin + product.image;
   }
 
   if (product.image.startsWith("./")) {
@@ -30,18 +30,18 @@ export function productImagePath(product) {
   return `/assets/images/${product.image}`;
 }
 
-function authHeaders() {
-  const token = localStorage.getItem("token");
+function authHeaders(session) {
+  const token = session === "pos" ? getPosToken() : getAdminToken();
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
-export async function fetchProducts(search = "", outletId = "") {
+export async function fetchProducts(search = "", outletId = "", session = "admin") {
   try {
     const params = new URLSearchParams();
     if (search.trim()) params.set("q", search.trim());
     if (outletId) params.set("outlet_id", String(outletId));
     const query = params.toString() ? `?${params.toString()}` : "";
-    const response = await fetch(`${API_BASE_URL}/products${query}`, { headers: authHeaders() });
+    const response = await fetch(`${API_BASE_URL}/products${query}`, { headers: authHeaders(session) });
     const data = unwrap(await response.json().catch(() => []));
 
     if (!response.ok) {
@@ -61,7 +61,7 @@ export async function createProduct(formData) {
   try {
     const response = await fetch(`${API_BASE_URL}/products`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", ...authHeaders() },
+      headers: { "Content-Type": "application/json", ...authHeaders("admin") },
       body: JSON.stringify(formData),
     });
 

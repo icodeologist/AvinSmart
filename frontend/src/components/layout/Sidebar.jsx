@@ -1,4 +1,5 @@
 import { Link, NavLink, useNavigate } from "react-router-dom";
+import { ADMIN_SESSION_KEY } from "../../api/config.js";
 
 const mainLinks = [
   { to: "/", icon: "ti ti-home", label: "Dashboard", end: true },
@@ -28,7 +29,7 @@ export default function Sidebar({ collapsed, mobileOpen }) {
   const className = `sidebar${collapsed ? " collapsed" : ""}${mobileOpen ? " mobile-show" : ""}`;
 
   function logout() {
-    localStorage.removeItem("token");
+    localStorage.removeItem(ADMIN_SESSION_KEY);
     localStorage.removeItem("admin");
     navigate("/login", { replace: true });
   }

@@ -1,4 +1,4 @@
-const API_BASE_URL = "http://localhost:8080/api/v1";
+const API_BASE_URL = window.__AVINSMART_API_BASE_URL__ || "/api/v1";
 
 function showAlert(element, type, message) {
   element.className = `alert alert-${type}`;

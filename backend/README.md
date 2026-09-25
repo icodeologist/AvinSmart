@@ -18,7 +18,18 @@ cp .env.example .env
 ```env
 SERVER_ADDRESS=:8080
 DATABASE_URL=postgres://postgres:postgres@localhost:5432/avinsmart?sslmode=disable
+APP_ENV=development
+JWT_SECRET=replace-this-with-a-long-random-secret
+JWT_ISSUER=avinsmart-api
+JWT_EXPIRY_HOURS=24
+CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:3001
 ```
+
+For production, set `APP_ENV=production`, use a random `JWT_SECRET` with at
+least 32 characters, and provide the exact browser origins in
+`CORS_ALLOWED_ORIGINS` as a comma-separated list. The server refuses to start
+with the development JWT secret or without production CORS origins. JWT
+expiration is controlled by `JWT_EXPIRY_HOURS`.
 
 ## Run
 
@@ -91,7 +102,9 @@ Authorization: Bearer <token>
 
 Staff registration and login are public. Staff listing requires an `admin` or `manager`
 token. All salary endpoints require an `admin` or `manager` token. Set a long random
-`JWT_SECRET` outside local development.
+`JWT_SECRET` outside local development. The web app stores administrator and POS
+tokens under separate browser session keys, so signing out of a counter does not
+sign out the administrator dashboard (and vice versa).
 
 ## Money rules
 

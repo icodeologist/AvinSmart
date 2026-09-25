@@ -1,7 +1,7 @@
-import { API_BASE_URL, unwrap } from "./config.js";
+import { API_BASE_URL, getAdminToken, unwrap } from "./config.js";
 
 function authHeaders() {
-  const token = localStorage.getItem("token");
+  const token = getAdminToken();
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
@@ -18,7 +18,7 @@ function normalize(category) {
 }
 
 export async function fetchCategories() {
-  const response = await fetch(`${API_BASE_URL}/categories`);
+  const response = await fetch(`${API_BASE_URL}/categories`, { headers: authHeaders() });
   const body = await response.json().catch(() => ({}));
   const data = unwrap(body);
   if (!response.ok) throw new Error(data.error || "Could not fetch categories");
