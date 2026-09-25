@@ -109,3 +109,7 @@ clients. It is not a second POS design: responses identify it with
 `Deprecation: true`, `X-Canonical-Sale-Flow: /api/v1/orders`, and a `Link`
 successor header. Migrate new integrations to orders while legacy clients are
 transitioned safely.
+
+Order reports are available at `GET /api/v1/orders?outlet_id=<id>`. They include
+outlet-scoped orders plus exact gross sales, applied payments, refunds, cash
+tendered, change, and net collected totals.

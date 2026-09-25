@@ -82,6 +82,7 @@ func cancelPendingOrder(tx *gorm.DB, order *models.Order, status string, now tim
 	}
 	order.Status = status
 	order.CancelledAt = &now
+	order.StockReleasedAt = &now
 	return tx.Save(order).Error
 }
 

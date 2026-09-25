@@ -19,8 +19,9 @@ import (
 )
 
 type paymentRequest struct {
-	Amount money.Amount `json:"amount"`
-	Method string       `json:"method"`
+	Amount       money.Amount  `json:"amount"`
+	Method       string        `json:"method"`
+	CashTendered *money.Amount `json:"cash_tendered"`
 }
 
 // RecordPayment uses a database row lock because AmountDue is shared state.
@@ -44,6 +45,19 @@ func RecordPayment(db *gorm.DB) http.HandlerFunc {
 		}
 		if payload.Method == "" {
 			api.WriteError(w, http.StatusBadRequest, "method is required")
+			return
+		}
+		if payload.Method == "cash" {
+			if payload.CashTendered == nil {
+				api.WriteError(w, http.StatusBadRequest, "cash_tendered is required for cash payments")
+				return
+			}
+			if payload.CashTendered.IsNegative() || payload.CashTendered.LessThan(payload.Amount) {
+				api.WriteError(w, http.StatusBadRequest, "cash_tendered must be at least the payment amount")
+				return
+			}
+		} else if payload.CashTendered != nil && !payload.CashTendered.IsZero() {
+			api.WriteError(w, http.StatusBadRequest, "cash_tendered is only valid for cash payments")
 			return
 		}
 		principal, ok := middleware.PrincipalFromContext(r.Context())
@@ -83,7 +97,13 @@ func RecordPayment(db *gorm.DB) http.HandlerFunc {
 			if payload.Amount.GreaterThan(order.AmountDue) {
 				return fmt.Errorf("payment exceeds amount due of %s", order.AmountDue.String())
 			}
-			payment = models.Payment{OrderID: order.ID, OutletID: order.OutletID, Amount: payload.Amount, Method: payload.Method}
+			cashTendered := money.Zero()
+			changeGiven := money.Zero()
+			if payload.CashTendered != nil {
+				cashTendered = *payload.CashTendered
+				changeGiven = cashTendered.Sub(payload.Amount)
+			}
+			payment = models.Payment{OrderID: order.ID, OutletID: order.OutletID, Amount: payload.Amount, Method: payload.Method, CashTendered: cashTendered, ChangeGiven: changeGiven}
 			order.AmountPaid = order.AmountPaid.Add(payload.Amount)
 			order.AmountDue = order.Total.Sub(order.AmountPaid)
 			if order.AmountDue.IsZero() {

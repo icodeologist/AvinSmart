@@ -31,10 +31,14 @@ export function quoteOrder({ items, priceTier, outletId }) {
   return post("/orders/quote", { items, price_tier: priceTier, outlet_id: outletId });
 }
 
-export function recordPayment(orderId, { amount, method }) {
-  return post(`/orders/${orderId}/payments`, { amount: String(amount), method });
+export function recordPayment(orderId, { amount, method, cashTendered }) {
+  return post(`/orders/${orderId}/payments`, { amount: String(amount), method, cash_tendered: cashTendered == null ? undefined : String(cashTendered) });
 }
 
 export function cancelOrder(orderId) {
   return post(`/orders/${orderId}/cancel`, {});
+}
+
+export function refundPayment(orderId, paymentId, reason) {
+  return post(`/orders/${orderId}/payments/${paymentId}/refund`, { reason });
 }

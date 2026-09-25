@@ -144,6 +144,7 @@ function PaymentSummary({
   quote,
   paymentMethod,
   paymentAmount,
+  cashTendered,
   amountDue,
   pendingOrderId,
   submitting,
@@ -152,6 +153,7 @@ function PaymentSummary({
   onPriceTier,
   onPaymentMethod,
   onPaymentAmount,
+  onCashTendered,
   onPay,
 }) {
   return (
@@ -200,6 +202,20 @@ function PaymentSummary({
         />
       </div>
 
+      {paymentMethod === "cash" && <div>
+        <label htmlFor="posCashTendered">Cash tendered</label>
+        <input
+          id="posCashTendered"
+          type="number"
+          min="0.01"
+          step="0.01"
+          className="form-control form-control-sm"
+          value={cashTendered}
+          placeholder={money(amountDue)}
+          onChange={(event) => onCashTendered(event.target.value)}
+        />
+      </div>}
+
       <div>
         <span>Subtotal</span>
         <strong>{money(quote?.subtotal)}</strong>
@@ -229,6 +245,7 @@ function CartPanel({
   priceTier,
   paymentMethod,
   paymentAmount,
+  cashTendered,
   amountDue,
   quote,
   pendingOrderId,
@@ -240,6 +257,7 @@ function CartPanel({
   onPriceTier,
   onPaymentMethod,
   onPaymentAmount,
+  onCashTendered,
   onPay,
 }) {
   return (
@@ -260,6 +278,7 @@ function CartPanel({
         priceTier={priceTier}
         paymentMethod={paymentMethod}
         paymentAmount={paymentAmount}
+        cashTendered={cashTendered}
         amountDue={amountDue}
         quote={quote}
         pendingOrderId={pendingOrderId}
@@ -269,6 +288,7 @@ function CartPanel({
         onPriceTier={onPriceTier}
         onPaymentMethod={onPaymentMethod}
         onPaymentAmount={onPaymentAmount}
+        onCashTendered={onCashTendered}
         onPay={onPay}
       />
     </aside>
@@ -286,6 +306,7 @@ export default function PosPage() {
   const [cart, setCart] = useState([]);
   const [priceTier, setPriceTier] = useState("original");
   const [paymentMethod, setPaymentMethod] = useState("cash");
+  const [cashTendered, setCashTendered] = useState("");
   const [pendingOrderId, setPendingOrderId] = useState(null);
   const [pendingAmountDue, setPendingAmountDue] = useState(0);
   const [quote, setQuote] = useState(null);
@@ -373,18 +394,26 @@ export default function PosPage() {
       }
 
       const amount = paymentAmount || due;
-      const result = await recordPayment(orderId, { amount, method: paymentMethod });
+      const result = await recordPayment(orderId, {
+        amount,
+        method: paymentMethod,
+        cashTendered: paymentMethod === "cash" ? (cashTendered || amount) : undefined,
+      });
       const remaining = result.order?.amount_due || "0.00";
       setPaymentAmount("");
+      setCashTendered("");
 
       if (remaining !== "0.00") {
         setPendingAmountDue(remaining);
-        setNotice(`Payment recorded. Remaining balance: ${money(remaining)}.`);
+        const change = result.payment?.change_given;
+        setNotice(`Payment recorded${change && change !== "0.00" ? `; change: ${money(change)}` : ""}. Remaining balance: ${money(remaining)}.`);
       } else {
-        setNotice(`Payment recorded for ${money(amount)}. Order is fully paid.`);
+        const change = result.payment?.change_given;
+        setNotice(`Payment recorded for ${money(amount)}${change && change !== "0.00" ? `; change: ${money(change)}` : ""}. Order is fully paid.`);
         setCart([]);
         setPendingOrderId(null);
         setPendingAmountDue(0);
+        setCashTendered("");
         setPriceTier("original");
       }
     } catch (submitError) {
@@ -413,6 +442,7 @@ export default function PosPage() {
     setPendingOrderId(null);
     setPendingAmountDue(0);
     setPaymentAmount("");
+    setCashTendered("");
     setQuote(null);
   }
 
@@ -448,6 +478,7 @@ export default function PosPage() {
           priceTier={priceTier}
           paymentMethod={paymentMethod}
           paymentAmount={paymentAmount}
+          cashTendered={cashTendered}
           amountDue={amountDue}
           quote={quote}
           pendingOrderId={pendingOrderId}
@@ -459,6 +490,7 @@ export default function PosPage() {
           onPriceTier={setPriceTier}
           onPaymentMethod={setPaymentMethod}
           onPaymentAmount={setPaymentAmount}
+          onCashTendered={setCashTendered}
           onPay={payNow}
         />
       </div>
