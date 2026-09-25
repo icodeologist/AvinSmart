@@ -29,7 +29,7 @@ export default function Sidebar({ collapsed, mobileOpen }) {
   function logout() {
     localStorage.removeItem(ADMIN_SESSION_KEY);
     localStorage.removeItem("admin");
-    navigate("/login", { replace: true });
+    navigate("/admin/login", { replace: true });
   }
 
   return (

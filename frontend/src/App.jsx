@@ -21,15 +21,9 @@ import PosLogin from "./views/PosLogin.jsx";
 import PosPage from "./views/PosPage.jsx";
 import Notifications from "./views/Notifications.jsx";
 import Welcome from "./views/Welcome.jsx";
-import { getAdminToken, getPosToken } from "./api/config.js";
+import { getAdminToken } from "./api/config.js";
 
 function Landing() {
-  if (getAdminToken()) return <Navigate to="/dashboard" replace />;
-
-  let staffSession = null;
-  try { staffSession = JSON.parse(sessionStorage.getItem("avinSmartPosStaff") || "null"); } catch { /* show welcome */ }
-  if (getPosToken() && staffSession) return <Navigate to="/pos" replace />;
-
   return <Welcome />;
 }
 
@@ -41,6 +35,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/" element={<Landing />} />
+      <Route path="/login" element={<Landing />} />
       <Route element={<RequireAdmin />}>
         <Route element={<AppLayout />}>
         <Route path="/dashboard" element={<Dashboard />} />
@@ -64,7 +59,7 @@ export default function App() {
       </Route>
       <Route path="/pos/login" element={<PosLogin />} />
       <Route path="/pos" element={<PosPage />} />
-      <Route path="/login" element={<SignIn />} />
+      <Route path="/admin/login" element={<SignIn />} />
       <Route path="/signup" element={<SignUp />} />
       <Route path="/404" element={<NotFound />} />
       <Route path="*" element={<NotFound />} />

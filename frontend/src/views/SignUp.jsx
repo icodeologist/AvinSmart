@@ -41,7 +41,7 @@ export default function SignUp() {
       setAlert({ type: "success", message: "Registration successful. Redirecting to login..." });
       form.reset();
       form.classList.remove("was-validated");
-      setTimeout(() => navigate("/login"), 800);
+      setTimeout(() => navigate("/admin/login"), 800);
     } catch (error) {
       setAlert({ type: "danger", message: error.message });
     } finally {
@@ -122,7 +122,7 @@ export default function SignUp() {
           </form>
 
           <div className="text-center mt-3 small text-muted">
-            Already have an account? <Link to="/login" className="link-primary">Sign in</Link>
+            Already have an account? <Link to="/admin/login" className="link-primary">Sign in</Link>
           </div>
         </div>
       </div>

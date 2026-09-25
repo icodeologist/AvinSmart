@@ -9,8 +9,8 @@ export default function Welcome() {
             <span className="avin-logo__avin"><span className="avin-logo__a">A</span>vin</span>
             <span className="avin-logo__smart"><span className="avin-logo__s">S</span>mart</span>
           </div>
-          <h1 className="display-5 fw-bold mb-2">Welcome to AvinSmart</h1>
-          <p className="lead text-muted mb-0">Choose how you want to continue.</p>
+          <h1 className="display-5 fw-bold mb-2">Login to AvinSmart</h1>
+          <p className="lead text-muted mb-0">Choose your account type to continue.</p>
         </div>
 
         <div className="row g-4">
@@ -35,7 +35,7 @@ export default function Welcome() {
                 </span>
                 <h2 className="h4">Admin Dashboard</h2>
                 <p className="text-muted flex-grow-1">Manage outlets, products, staff, and business settings.</p>
-                <Link to="/login" className="btn btn-outline-success w-100">Login as Admin</Link>
+                <Link to="/admin/login" className="btn btn-outline-success w-100">Login as Admin</Link>
               </div>
             </div>
           </div>
