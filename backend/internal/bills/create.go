@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"avinsmart/backend/internal/api"
+	"avinsmart/backend/internal/inventory"
 	"avinsmart/backend/internal/middleware"
 	"avinsmart/backend/internal/models"
 	"avinsmart/backend/internal/money"
@@ -148,6 +149,7 @@ func CreateBill(db *gorm.DB) http.HandlerFunc {
 		}
 
 		txErr := db.Transaction(func(tx *gorm.DB) error {
+			actorID := principal.UserID
 			products := make(map[uint]models.Product, len(payload.Items))
 			pricingItems := make([]pricing.Item, 0, len(payload.Items))
 			resolvedSKUs := make([]string, 0, len(payload.Items))
@@ -201,7 +203,18 @@ func CreateBill(db *gorm.DB) http.HandlerFunc {
 				bill.Items = append(bill.Items, models.BillItem{ProductID: line.ProductID, Title: line.Title, SKUID: resolvedSKUs[index], Quantity: line.Quantity, Unit: line.Unit, UnitPrice: line.UnitPrice, Amount: line.Amount, RetailPrice: line.RetailPrice, CustomerDisplayPrice: line.CustomerDisplayPrice, BoughtPrice: line.BoughtPrice, WholeSalePrice: line.WholesalePrice})
 			}
 
-			return tx.Create(&bill).Error
+			if err := tx.Create(&bill).Error; err != nil {
+				return err
+			}
+			for _, line := range quote.Lines {
+				if line.ProductID == nil {
+					continue
+				}
+				if err := inventory.Record(tx, products[*line.ProductID], -line.Quantity, inventory.ReasonSale, &actorID, "bill", bill.ID); err != nil {
+					return err
+				}
+			}
+			return nil
 		})
 
 		if txErr != nil {

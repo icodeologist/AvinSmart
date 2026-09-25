@@ -118,3 +118,23 @@ transitioned safely.
 Order reports are available at `GET /api/v1/orders?outlet_id=<id>`. They include
 outlet-scoped orders plus exact gross sales, applied payments, refunds, cash
 tendered, change, and net collected totals.
+
+## Inventory history
+
+Stock changes are recorded in `inventory_movements` with a signed quantity,
+outlet, product, reason, actor, and optional source record. Use
+`GET /api/v1/inventory/movements` to reconcile current quantities. Transfers
+are created with an idempotent `POST /api/v1/inventory/transfers` body such as:
+
+```json
+{
+  "source_outlet_id": 1,
+  "destination_outlet_id": 2,
+  "product_id": 17,
+  "quantity": 4
+}
+```
+
+The transfer locks source and destination stock, rejects negative transfers,
+creates a destination product record when needed, and writes paired
+`transfer_out`/`transfer_in` movements.

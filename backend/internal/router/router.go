@@ -34,6 +34,7 @@ func New(db *gorm.DB, cfg config.Config) http.Handler {
 		r.Mount("/salaries", SalaryRoutes(db, cfg))
 		r.Mount("/bills", BillRoutes(db, cfg))
 		r.With(middleware.RequireAuth(cfg), middleware.RequireRoles("admin", "manager", "sales")).Mount("/orders", OrderRoutes(db))
+		r.Mount("/inventory", InventoryRoutes(db, cfg))
 		r.With(middleware.RequireAuth(cfg)).Mount("/notifications", notifications.Routes(db))
 	})
 

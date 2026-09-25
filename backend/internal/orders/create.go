@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"avinsmart/backend/internal/api"
+	"avinsmart/backend/internal/inventory"
 	"avinsmart/backend/internal/middleware"
 	"avinsmart/backend/internal/models"
 	"avinsmart/backend/internal/money"
@@ -69,6 +70,7 @@ func Create(db *gorm.DB) http.HandlerFunc {
 		expiresAt := time.Now().Add(pendingOrderLifetime)
 		order := models.Order{OrderNumber: payload.OrderNumber, OutletID: outletID, Status: "pending", PriceTier: payload.PriceTier, Cashier: strings.TrimSpace(payload.Cashier), ExpiresAt: &expiresAt}
 		err = db.Transaction(func(tx *gorm.DB) error {
+			actorID := principal.UserID
 			products := make(map[uint]models.Product, len(payload.Items))
 			pricingItems := make([]pricing.Item, 0, len(payload.Items))
 			for _, item := range payload.Items {
@@ -99,7 +101,15 @@ func Create(db *gorm.DB) http.HandlerFunc {
 			for _, line := range quote.Lines {
 				order.Items = append(order.Items, models.OrderItem{ProductID: *line.ProductID, Title: line.Title, Quantity: line.Quantity, UnitPrice: line.UnitPrice, Amount: line.Amount, RetailPrice: line.RetailPrice, CustomerDisplayPrice: line.CustomerDisplayPrice, BoughtPrice: line.BoughtPrice, WholesalePrice: line.WholesalePrice})
 			}
-			return tx.Create(&order).Error
+			if err := tx.Create(&order).Error; err != nil {
+				return err
+			}
+			for _, line := range quote.Lines {
+				if err := inventory.Record(tx, products[*line.ProductID], -line.Quantity, inventory.ReasonSale, &actorID, "order", order.ID); err != nil {
+					return err
+				}
+			}
+			return nil
 		})
 		if err != nil {
 			api.WriteError(w, http.StatusBadRequest, err.Error())

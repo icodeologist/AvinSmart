@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"avinsmart/backend/internal/api"
+	"avinsmart/backend/internal/inventory"
 	"avinsmart/backend/internal/middleware"
 	"avinsmart/backend/internal/models"
 	"avinsmart/backend/internal/money"
@@ -81,7 +82,7 @@ func RefundPayment(db *gorm.DB) http.HandlerFunc {
 			}
 			if activePayments == 0 {
 				if order.StockReleasedAt == nil {
-					if err := releaseReservedStock(tx, order.ID); err != nil {
+					if err := releaseReservedStock(tx, order.ID, inventory.ReasonRefund, &principal.UserID); err != nil {
 						return err
 					}
 					order.StockReleasedAt = &now

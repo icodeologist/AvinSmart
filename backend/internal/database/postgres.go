@@ -57,6 +57,9 @@ func AutoMigrate(db *gorm.DB) error {
 		if err := db.Model(&models.Product{}).Where("outlet_id = 0").Update("outlet_id", outlet.ID).Error; err != nil {
 			return err
 		}
+		if err := prepareProductSKUIndex(db); err != nil {
+			return err
+		}
 	}
 
 	if err := db.AutoMigrate(
@@ -90,7 +93,48 @@ func AutoMigrate(db *gorm.DB) error {
 		}
 	}
 
-	return db.AutoMigrate(&models.Product{})
+	if err := db.AutoMigrate(&models.Product{}, &models.InventoryMovement{}, &models.InventoryTransfer{}); err != nil {
+		return err
+	}
+	return backfillInventoryOpeningMovements(db)
+}
+
+func backfillInventoryOpeningMovements(db *gorm.DB) error {
+	if !db.Migrator().HasTable("products") || !db.Migrator().HasTable("inventory_movements") {
+		return nil
+	}
+	return db.Exec(`
+		INSERT INTO inventory_movements (outlet_id, product_id, quantity_delta, reason)
+		SELECT p.outlet_id, p.id, p.quantity, 'opening_stock'
+		FROM products p
+		WHERE p.quantity <> 0
+		  AND NOT EXISTS (
+			SELECT 1 FROM inventory_movements m WHERE m.product_id = p.id
+		  )
+	`).Error
+}
+
+func prepareProductSKUIndex(db *gorm.DB) error {
+	if db.Dialector.Name() != "postgres" || !db.Migrator().HasTable("products") {
+		return nil
+	}
+	if err := db.Exec(`DO $$
+DECLARE index_record record;
+BEGIN
+  FOR index_record IN
+    SELECT indexname
+    FROM pg_indexes
+    WHERE tablename = 'products'
+      AND indexdef LIKE 'CREATE UNIQUE INDEX%'
+      AND indexdef LIKE '%(sku_id)%'
+      AND indexdef NOT LIKE '%(outlet_id, sku_id)%'
+  LOOP
+    EXECUTE format('DROP INDEX IF EXISTS %I', index_record.indexname);
+  END LOOP;
+END $$;`).Error; err != nil {
+		return err
+	}
+	return db.Exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_products_outlet_sku ON products (outlet_id, sku_id)`).Error
 }
 
 func prepareOutletOwnershipColumns(db *gorm.DB, outletID uint) error {

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"avinsmart/backend/internal/api"
+	"avinsmart/backend/internal/inventory"
 	"avinsmart/backend/internal/middleware"
 	"avinsmart/backend/internal/models"
 	"avinsmart/backend/internal/money"
@@ -151,7 +152,13 @@ func CreateProduct(db *gorm.DB) http.HandlerFunc {
 			Image:                imageURL,
 		}
 
-		if err := db.Create(&product).Error; err != nil {
+		actorID := principal.UserID
+		if err := db.Transaction(func(tx *gorm.DB) error {
+			if err := tx.Create(&product).Error; err != nil {
+				return err
+			}
+			return inventory.Record(tx, product, product.Quantity, inventory.ReasonOpening, &actorID, "product", product.ID)
+		}); err != nil {
 			if api.IsUniqueViolation(err) {
 				api.WriteError(w, http.StatusConflict, "product sku already exists")
 				return

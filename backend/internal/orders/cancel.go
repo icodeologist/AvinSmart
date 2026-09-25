@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"avinsmart/backend/internal/api"
+	"avinsmart/backend/internal/inventory"
 	"avinsmart/backend/internal/middleware"
 	"avinsmart/backend/internal/models"
 	"avinsmart/backend/internal/outletaccess"
@@ -47,7 +48,8 @@ func Cancel(db *gorm.DB) http.HandlerFunc {
 			if !allowed {
 				return outletaccess.ErrOutletForbidden
 			}
-			return cancelPendingOrder(tx, &order, "cancelled", time.Now())
+			actorID := principal.UserID
+			return cancelPendingOrder(tx, &order, "cancelled", time.Now(), &actorID)
 		})
 		if err != nil {
 			writeCancellationError(w, err)
@@ -65,7 +67,7 @@ func lockOrder(tx *gorm.DB, id string) (models.Order, error) {
 	return order, nil
 }
 
-func cancelPendingOrder(tx *gorm.DB, order *models.Order, status string, now time.Time) error {
+func cancelPendingOrder(tx *gorm.DB, order *models.Order, status string, now time.Time, actorID *uint) error {
 	switch order.Status {
 	case "paid":
 		return ErrOrderPaid
@@ -77,7 +79,7 @@ func cancelPendingOrder(tx *gorm.DB, order *models.Order, status string, now tim
 		return fmt.Errorf("order cannot be cancelled from status %q", order.Status)
 	}
 
-	if err := releaseReservedStock(tx, order.ID); err != nil {
+	if err := releaseReservedStock(tx, order.ID, inventory.ReasonSaleReversal, actorID); err != nil {
 		return err
 	}
 	order.Status = status
@@ -86,7 +88,7 @@ func cancelPendingOrder(tx *gorm.DB, order *models.Order, status string, now tim
 	return tx.Save(order).Error
 }
 
-func releaseReservedStock(tx *gorm.DB, orderID uint) error {
+func releaseReservedStock(tx *gorm.DB, orderID uint, reason string, actorID *uint) error {
 	var items []models.OrderItem
 	if err := tx.Where("order_id = ?", orderID).Find(&items).Error; err != nil {
 		return err
@@ -100,6 +102,9 @@ func releaseReservedStock(tx *gorm.DB, orderID uint) error {
 		if err := tx.Model(&product).UpdateColumn("quantity", gorm.Expr("quantity + ?", item.Quantity)).Error; err != nil {
 			return err
 		}
+		if err := inventory.Record(tx, product, item.Quantity, reason, actorID, "order", orderID); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -108,7 +113,7 @@ func expirePendingOrder(tx *gorm.DB, order *models.Order, now time.Time) error {
 	if order.Status != "pending" || order.ExpiresAt == nil || order.ExpiresAt.After(now) {
 		return nil
 	}
-	return cancelPendingOrder(tx, order, "expired", now)
+	return cancelPendingOrder(tx, order, "expired", now, nil)
 }
 
 // ExpirePending reuses the same locked cancellation transaction as the HTTP
