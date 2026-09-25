@@ -22,14 +22,23 @@ import PosPage from "./views/PosPage.jsx";
 import Notifications from "./views/Notifications.jsx";
 import Welcome from "./views/Welcome.jsx";
 import PriceUpdates from "./views/PriceUpdates.jsx";
-import { getAdminToken } from "./api/config.js";
+import { getAdminToken, getPosToken } from "./api/config.js";
 
 function Landing() {
   return <Welcome />;
 }
 
 function RequireAdmin() {
-  return getAdminToken() ? <Outlet /> : <Navigate to="/" replace />;
+  if (getAdminToken()) return <Outlet />;
+  if (getPosToken() && window.location.pathname === "/inventory") {
+    try {
+      const staff = JSON.parse(sessionStorage.getItem("avinSmartPosStaff") || "null");
+      if (staff?.role === "inventory_staff") return <Outlet />;
+    } catch {
+      // Invalid session data falls through to the login page.
+    }
+  }
+  return <Navigate to="/" replace />;
 }
 
 export default function App() {
@@ -59,7 +68,9 @@ export default function App() {
         <Route path="/staff/salaries" element={<ManageSalaries />} />
         </Route>
       </Route>
-      <Route path="/pos/login" element={<PosLogin />} />
+      <Route path="/pos/login" element={<PosLogin role="sales" />} />
+      <Route path="/staff/sales/login" element={<PosLogin role="sales" />} />
+      <Route path="/staff/inventory/login" element={<PosLogin role="inventory_staff" />} />
       <Route path="/pos" element={<PosPage />} />
       <Route path="/admin/login" element={<SignIn />} />
       <Route path="/signup" element={<SignUp />} />

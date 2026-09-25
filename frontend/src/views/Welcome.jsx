@@ -14,20 +14,33 @@ export default function Welcome() {
         </div>
 
         <div className="row g-4">
-          <div className="col-md-6">
+          <div className="col-lg-4">
             <div className="card h-100 shadow-sm border-0">
               <div className="card-body p-4 p-lg-5 d-flex flex-column">
                 <span className="icon-shape icon-lg bg-primary bg-opacity-10 text-primary rounded-3 mb-4">
                   <i className="ti ti-device-desktop" />
                 </span>
-                <h2 className="h4">Staff POS</h2>
-                <p className="text-muted flex-grow-1">Open the counter and start serving customers.</p>
-                <Link to="/pos/login" className="btn btn-primary w-100">Login as Staff</Link>
+                <h2 className="h4">Staff / Sales Login</h2>
+                <p className="text-muted flex-grow-1">Open the sales counter and serve customers.</p>
+                <Link to="/staff/sales/login" className="btn btn-primary w-100">Login as Sales Staff</Link>
               </div>
             </div>
           </div>
 
-          <div className="col-md-6">
+          <div className="col-lg-4">
+            <div className="card h-100 shadow-sm border-0">
+              <div className="card-body p-4 p-lg-5 d-flex flex-column">
+                <span className="icon-shape icon-lg bg-warning bg-opacity-10 text-warning rounded-3 mb-4">
+                  <i className="ti ti-box-seam" />
+                </span>
+                <h2 className="h4">Staff / Inventory Login</h2>
+                <p className="text-muted flex-grow-1">Manage inventory and update stock information.</p>
+                <Link to="/staff/inventory/login" className="btn btn-outline-warning w-100">Login as Inventory Staff</Link>
+              </div>
+            </div>
+          </div>
+
+          <div className="col-lg-4">
             <div className="card h-100 shadow-sm border-0">
               <div className="card-body p-4 p-lg-5 d-flex flex-column">
                 <span className="icon-shape icon-lg bg-success bg-opacity-10 text-success rounded-3 mb-4">

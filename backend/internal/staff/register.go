@@ -15,10 +15,11 @@ import (
 )
 
 var validRoles = map[string]bool{
-	"manager":   true,
-	"sales":     true,
-	"inventory": true,
-	"support":   true,
+	"manager":         true,
+	"sales":           true,
+	"inventory":       true,
+	"inventory_staff": true,
+	"support":         true,
 }
 
 type registerRequest struct {
@@ -52,7 +53,7 @@ func (r *registerRequest) validate() api.Fields {
 		fields.Add("phone", "phone is required")
 	}
 	if !validRoles[r.Role] {
-		fields.Add("role", "role must be one of: manager, sales, inventory, support")
+		fields.Add("role", "role must be one of: manager, sales, inventory, inventory_staff, support")
 	}
 	if requiresOutlet(r.Role) && len(r.OutletIDs) == 0 {
 		fields.Add("outlet_ids", "at least one outlet is required for this role")

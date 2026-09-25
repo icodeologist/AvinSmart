@@ -17,16 +17,21 @@ import (
 type loginRequest struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
+	Role     string `json:"role"`
 }
 
 func (r *loginRequest) validate() api.Fields {
 	fields := api.NewFields()
 	r.Email = strings.TrimSpace(strings.ToLower(r.Email))
+	r.Role = strings.TrimSpace(strings.ToLower(r.Role))
 	if r.Email == "" || !api.IsValidEmail(r.Email) {
 		fields.Add("email", "email must be valid")
 	}
 	if r.Password == "" {
 		fields.Add("password", "password is required")
+	}
+	if r.Role != "sales" && r.Role != "inventory_staff" {
+		fields.Add("role", "role must be sales or inventory_staff")
 	}
 	return fields
 }
@@ -54,6 +59,10 @@ func Login(db *gorm.DB, cfg config.Config) http.HandlerFunc {
 		}
 		if member.Status != "active" || bcrypt.CompareHashAndPassword([]byte(member.PasswordHash), []byte(payload.Password)) != nil {
 			api.WriteError(w, http.StatusUnauthorized, "invalid email or password")
+			return
+		}
+		if member.Role != payload.Role {
+			api.WriteError(w, http.StatusUnauthorized, "this staff account is not assigned to the selected role")
 			return
 		}
 

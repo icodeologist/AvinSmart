@@ -75,6 +75,7 @@ export default function StaffRegistrationForm() {
                 <option value="manager">Manager</option>
                 <option value="sales">Sales</option>
                 <option value="inventory">Inventory</option>
+                <option value="inventory_staff">Inventory Staff</option>
                 <option value="support">Support</option>
               </select>
               {fieldErrors.role ? <div className="invalid-feedback d-block">{fieldErrors.role}</div> : null}

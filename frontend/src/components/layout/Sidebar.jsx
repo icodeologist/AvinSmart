@@ -1,5 +1,5 @@
 import { Link, NavLink, useNavigate } from "react-router-dom";
-import { ADMIN_SESSION_KEY } from "../../api/config.js";
+import { ADMIN_SESSION_KEY, POS_SESSION_KEY } from "../../api/config.js";
 
 const mainLinks = [
   { to: "/dashboard", icon: "ti ti-home", label: "Dashboard", end: true },
@@ -7,7 +7,7 @@ const mainLinks = [
   { to: "/outlets", icon: "ti ti-building-store", label: "Manage Outlets" },
   { to: "/price-updates", icon: "ti ti-chart-line", label: "Update Product" },
   { to: "/bills/create", icon: "ti ti-file-invoice", label: "Legacy Bill" },
-  { to: "/pos/login", icon: "ti ti-device-desktop", label: "Staff POS" },
+  { to: "/staff/sales/login", icon: "ti ti-device-desktop", label: "Staff / Sales Login" },
   { to: "/staff", icon: "ti ti-users", label: "Manage Staff" },
   { to: "/reports", icon: "ti ti-receipt", label: "Reports" },
   { to: "/cash-flow", icon: "ti ti-cash", label: "Cash Flow" },
@@ -26,11 +26,21 @@ function navLinkClass(isActive) {
 export default function Sidebar({ collapsed, mobileOpen }) {
   const navigate = useNavigate();
   const className = `sidebar${collapsed ? " collapsed" : ""}${mobileOpen ? " mobile-show" : ""}`;
+  let inventoryStaff = false;
+  try {
+    const staff = JSON.parse(sessionStorage.getItem("avinSmartPosStaff") || "null");
+    inventoryStaff = Boolean(staff?.role === "inventory_staff");
+  } catch {
+    inventoryStaff = false;
+  }
+  const visibleLinks = inventoryStaff ? mainLinks.filter((link) => link.to === "/inventory") : mainLinks;
 
   function logout() {
     localStorage.removeItem(ADMIN_SESSION_KEY);
     localStorage.removeItem("admin");
-    navigate("/admin/login", { replace: true });
+    localStorage.removeItem(POS_SESSION_KEY);
+    sessionStorage.removeItem("avinSmartPosStaff");
+    navigate("/", { replace: true });
   }
 
   return (
@@ -41,7 +51,7 @@ export default function Sidebar({ collapsed, mobileOpen }) {
 
       <ul className="nav flex-column">
         <li className="px-4 py-2"><small className="nav-text">Main</small></li>
-        {mainLinks.map((link) => (
+        {visibleLinks.map((link) => (
           <li key={link.to}>
             <NavLink end={link.end} className={({ isActive }) => navLinkClass(isActive)} to={link.to}>
               <i className={link.icon}></i><span className="nav-text">{link.label}</span>

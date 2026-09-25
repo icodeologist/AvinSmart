@@ -3,7 +3,7 @@ package staff
 import "testing"
 
 func TestRegisterValidationRequiresOutletForOperationalStaff(t *testing.T) {
-	for _, role := range []string{"manager", "sales", "inventory"} {
+	for _, role := range []string{"manager", "sales", "inventory", "inventory_staff"} {
 		payload := registerRequest{
 			Name:     "Counter user",
 			Email:    "counter@example.com",

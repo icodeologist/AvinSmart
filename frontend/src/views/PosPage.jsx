@@ -456,10 +456,10 @@ export default function PosPage() {
   function logout() {
     sessionStorage.removeItem("avinSmartPosStaff");
     localStorage.removeItem(POS_SESSION_KEY);
-    navigate("/pos/login");
+    navigate("/staff/sales/login");
   }
 
-  if (!staff) return <Navigate to="/pos/login" replace />;
+  if (!staff) return <Navigate to="/staff/sales/login" replace />;
 
   if (!outletId) return <main className="pos-login-shell"><div className="alert alert-danger">This staff account is not assigned to an active outlet.</div></main>;
 

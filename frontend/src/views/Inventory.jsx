@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import PageHeader from "../components/layout/PageHeader.jsx";
 import { fetchProducts, formatPrice, productImagePath } from "../api/productsApi.js";
+import { getPosToken } from "../api/config.js";
 
 export default function Inventory() {
   const [products, setProducts] = useState([]);
@@ -12,7 +13,7 @@ export default function Inventory() {
 
   useEffect(() => {
     let cancelled = false;
-    fetchProducts()
+    fetchProducts("", "", getPosToken() ? "pos" : "admin")
       .then((data) => {
         if (cancelled) return;
         setProducts(data);
