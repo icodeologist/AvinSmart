@@ -15,5 +15,9 @@ func CategoryRoutes(db *gorm.DB, cfg config.Config) http.Handler {
 	r := chi.NewRouter()
 	r.Get("/", categories.List(db))
 	r.With(middleware.RequireAuth(cfg), middleware.RequireRoles("admin", "manager")).Post("/", categories.Create(db))
+	r.With(middleware.RequireAuth(cfg), middleware.RequireRoles("admin", "manager")).Patch("/{categoryID}", categories.Update(db))
+	r.With(middleware.RequireAuth(cfg), middleware.RequireRoles("admin", "manager")).Delete("/{categoryID}", categories.Delete(db))
+	r.With(middleware.RequireAuth(cfg), middleware.RequireRoles("admin", "manager")).Post("/{categoryID}/subcategories", categories.CreateSubCategory(db))
+	r.With(middleware.RequireAuth(cfg), middleware.RequireRoles("admin", "manager")).Delete("/{categoryID}/subcategories/{subcategoryID}", categories.DeleteSubCategory(db))
 	return r
 }

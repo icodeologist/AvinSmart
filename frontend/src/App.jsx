@@ -21,6 +21,7 @@ import PosLogin from "./views/PosLogin.jsx";
 import PosPage from "./views/PosPage.jsx";
 import Notifications from "./views/Notifications.jsx";
 import Welcome from "./views/Welcome.jsx";
+import PriceUpdates from "./views/PriceUpdates.jsx";
 import { getAdminToken } from "./api/config.js";
 
 function Landing() {
@@ -40,6 +41,7 @@ export default function App() {
         <Route element={<AppLayout />}>
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/inventory" element={<Inventory />} />
+        <Route path="/price-updates" element={<PriceUpdates />} />
         <Route path="/products/create" element={<Navigate to="/outlets" replace />} />
         <Route path="/categories/add" element={<Navigate to="/outlets" replace />} />
         <Route path="/outlets" element={<ManageOutlets />} />

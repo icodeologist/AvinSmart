@@ -216,6 +216,11 @@ export default function CreateProduct() {
                     <option value="">Select category</option>
                     {categories.map((item) => <option value={item.name} key={item.id}>{item.name}</option>)}
                   </select>
+                  {!categories.length ? (
+                    <div className="form-text text-warning">
+                      No categories are available yet. <Link to="/outlets/categories/add">Create a category in Manage Outlets</Link>, then return here.
+                    </div>
+                  ) : null}
                 </div>
                 <div className="mb-3">
                   <label htmlFor="productSubCategory" className="form-label">Subcategory</label>
@@ -225,6 +230,7 @@ export default function CreateProduct() {
                       <option value={sub.name} key={sub.id || sub.name}>{sub.name}</option>
                     ))}
                   </select>
+                  {!category ? <div className="form-text">Select a category to load its subcategories.</div> : null}
                 </div>
                 <div className="mb-3">
                   <label htmlFor="productImage" className="form-label">Product Image</label>

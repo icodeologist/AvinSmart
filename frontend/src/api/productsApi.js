@@ -73,3 +73,38 @@ export async function createProduct(formData) {
     throw error;
   }
 }
+
+export async function updateProductPrices(productId, prices) {
+  const response = await fetch(`${API_BASE_URL}/products/${productId}/prices`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...authHeaders("admin") },
+    body: JSON.stringify({
+      quantity: Number(prices.quantity || 0),
+      retail_price: String(prices.retail_price || "0.00"),
+      customer_display_price: String(prices.customer_display_price || "0.00"),
+      bought_price: String(prices.bought_price || "0.00"),
+      whole_sale_price: String(prices.whole_sale_price || "0.00"),
+      all_outlets: Boolean(prices.all_outlets),
+    }),
+  });
+  const body = await response.json().catch(() => ({}));
+  const data = unwrap(body);
+  if (!response.ok) throw new Error(data.error || "Could not update product prices");
+  return data;
+}
+
+export async function fetchProductPriceHistory(productId) {
+  const response = await fetch(`${API_BASE_URL}/products/${productId}/price-history`, { headers: authHeaders("admin") });
+  const body = await response.json().catch(() => ({}));
+  const data = unwrap(body);
+  if (!response.ok) throw new Error(data.error || "Could not fetch price history");
+  return Array.isArray(data) ? data : [];
+}
+
+export async function fetchRecentPriceHistory() {
+  const response = await fetch(`${API_BASE_URL}/products/price-history/recent`, { headers: authHeaders("admin") });
+  const body = await response.json().catch(() => ({}));
+  const data = unwrap(body);
+  if (!response.ok) throw new Error(data.error || "Could not fetch recent price history");
+  return Array.isArray(data) ? data : [];
+}

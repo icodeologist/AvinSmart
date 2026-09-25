@@ -13,6 +13,7 @@ const (
 	ReasonRefund       = "refund"
 	ReasonTransferOut  = "transfer_out"
 	ReasonTransferIn   = "transfer_in"
+	ReasonAdjustment   = "adjustment"
 )
 
 func Record(tx *gorm.DB, product models.Product, delta int, reason string, actorID *uint, referenceType string, referenceID uint) error {

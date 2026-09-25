@@ -5,6 +5,7 @@ const mainLinks = [
   { to: "/dashboard", icon: "ti ti-home", label: "Dashboard", end: true },
   { to: "/inventory", icon: "ti ti-box-seam", label: "Inventory" },
   { to: "/outlets", icon: "ti ti-building-store", label: "Manage Outlets" },
+  { to: "/price-updates", icon: "ti ti-chart-line", label: "Update Product" },
   { to: "/bills/create", icon: "ti ti-file-invoice", label: "Legacy Bill" },
   { to: "/pos/login", icon: "ti ti-device-desktop", label: "Staff POS" },
   { to: "/staff", icon: "ti ti-users", label: "Manage Staff" },
