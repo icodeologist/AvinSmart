@@ -54,9 +54,14 @@ Example registration body:
   "email": "jane@example.com",
   "password": "change-me-123",
   "phone": "+1 512 555 0178",
-  "role": "sales"
+  "role": "sales",
+  "outlet_ids": [1]
 }
 ```
+
+Managers, sales, and inventory staff must have at least one active outlet
+assignment. Admins have explicit cross-outlet access; manager staff-management
+requests are limited to the manager's own assignments.
 
 Salary endpoints:
 

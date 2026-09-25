@@ -1,12 +1,19 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { createStaff } from "../../api/staffApi.js";
+import { fetchOutlets } from "../../api/outletsApi.js";
 
 export default function StaffRegistrationForm() {
   const navigate = useNavigate();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [fieldErrors, setFieldErrors] = useState({});
+  const [outlets, setOutlets] = useState([]);
+  const [outletError, setOutletError] = useState("");
+
+  useEffect(() => {
+    fetchOutlets().then(setOutlets).catch((loadError) => setOutletError(loadError.message));
+  }, []);
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -18,6 +25,7 @@ export default function StaffRegistrationForm() {
       phone: form.staffPhone.value.trim(),
       role: form.staffRole.value,
       password: form.staffPassword.value,
+      outletIds: Array.from(form.staffOutlets.selectedOptions).map((option) => Number(option.value)),
     };
 
     setSubmitting(true);
@@ -75,6 +83,15 @@ export default function StaffRegistrationForm() {
               <label htmlFor="staffPassword" className="form-label">Temporary password</label>
               <input type="password" className="form-control" id="staffPassword" minLength="8" required />
               {fieldErrors.password ? <div className="invalid-feedback d-block">{fieldErrors.password}</div> : null}
+            </div>
+            <div className="col-md-6">
+              <label htmlFor="staffOutlets" className="form-label">Assigned outlets</label>
+              <select className="form-select" id="staffOutlets" name="staffOutlets" multiple size="4">
+                {outlets.map((outlet) => <option value={outlet.id} key={outlet.id}>{outlet.name}</option>)}
+              </select>
+              <small className="text-muted">Select every branch this staff member may operate.</small>
+              {outletError ? <div className="invalid-feedback d-block">{outletError}</div> : null}
+              {fieldErrors.outlet_ids ? <div className="invalid-feedback d-block">{fieldErrors.outlet_ids}</div> : null}
             </div>
           </div>
           <div className="d-flex gap-2 mt-4">

@@ -13,7 +13,7 @@ function normalize(member) {
     phone: member.phone || "",
     role: member.role || "staff",
     status: member.status || "active",
-    outlets: Array.isArray(member.outlets) ? member.outlets : [],
+    outlets: Array.isArray(member.outlets) ? member.outlets.map((outlet) => ({ id: outlet.id, name: outlet.name })) : [],
     joinedOn: member.joinedOn || member.created_at || "",
     passwordSet: true,
   };
@@ -65,6 +65,7 @@ export async function createStaff(staff) {
     password: String(staff.password || ""),
     phone: String(staff.phone || "").trim(),
     role: staff.role || "staff",
+    outlet_ids: Array.isArray(staff.outletIds) ? staff.outletIds.map(Number) : [],
   };
 
   try {
@@ -93,6 +94,7 @@ export async function updateStaff(id, staff) {
       phone: String(staff.phone || "").trim(),
       role: staff.role || "staff",
       status: staff.status || "active",
+      outlet_ids: Array.isArray(staff.outletIds) ? staff.outletIds.map(Number) : undefined,
     }),
   });
   try {

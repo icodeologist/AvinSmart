@@ -15,7 +15,7 @@ func OutletRoutes(db *gorm.DB, cfg config.Config) http.Handler {
 	r := chi.NewRouter()
 	management := r.With(middleware.RequireAuth(cfg), middleware.RequireRoles("admin", "manager"))
 	management.Get("/", outlets.ListOutlets(db))
-	management.Post("/", outlets.CreateOutlet(db))
+	r.With(middleware.RequireAuth(cfg), middleware.RequireRoles("admin")).Post("/", outlets.CreateOutlet(db))
 
 	return r
 }

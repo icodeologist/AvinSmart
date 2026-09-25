@@ -103,3 +103,16 @@ func WhereAllowed(db *gorm.DB, principal auth.Principal, query *gorm.DB, column 
 	}
 	return query.Where(column+" IN ?", ids), nil
 }
+
+func ValidateAssignments(db *gorm.DB, principal auth.Principal, outletIDs []uint) error {
+	for _, outletID := range outletIDs {
+		allowed, err := CanAccess(db, principal, outletID)
+		if err != nil {
+			return err
+		}
+		if !allowed {
+			return ErrOutletForbidden
+		}
+	}
+	return nil
+}

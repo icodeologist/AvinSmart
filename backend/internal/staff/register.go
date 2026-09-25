@@ -6,7 +6,9 @@ import (
 	"strings"
 
 	"avinsmart/backend/internal/api"
+	"avinsmart/backend/internal/middleware"
 	"avinsmart/backend/internal/models"
+	"avinsmart/backend/internal/outletaccess"
 
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
@@ -61,6 +63,11 @@ func (r *registerRequest) validate() api.Fields {
 
 func Register(db *gorm.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		principal, ok := middleware.PrincipalFromContext(r.Context())
+		if !ok {
+			api.WriteError(w, http.StatusUnauthorized, "authentication is required")
+			return
+		}
 		var payload registerRequest
 		if err := api.DecodeJSON(r, &payload); err != nil {
 			api.WriteError(w, http.StatusBadRequest, "invalid json body")
@@ -68,6 +75,14 @@ func Register(db *gorm.DB) http.HandlerFunc {
 		}
 		if fields := payload.validate(); fields.HasErrors() {
 			api.WriteValidation(w, "invalid request payload", fields)
+			return
+		}
+		if err := outletaccess.ValidateAssignments(db, principal, payload.OutletIDs); err != nil {
+			if errors.Is(err, outletaccess.ErrOutletForbidden) {
+				api.WriteError(w, http.StatusForbidden, err.Error())
+			} else {
+				api.WriteError(w, http.StatusBadRequest, err.Error())
+			}
 			return
 		}
 

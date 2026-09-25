@@ -7,6 +7,7 @@ function authHeaders() {
 
 function normalizeOutlet(outlet) {
   return {
+    id: outlet.id,
     name: outlet.name,
     location: outlet.location || "",
     contact: outlet.contact_person || "",
