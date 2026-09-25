@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, Navigate, useNavigate } from "react-router-dom";
 import { login } from "../api/authApi.js";
-import { ADMIN_SESSION_KEY } from "../api/config.js";
+import { ADMIN_SESSION_KEY, getAdminToken } from "../api/config.js";
 
 export default function SignIn() {
   const navigate = useNavigate();
@@ -9,6 +9,8 @@ export default function SignIn() {
   const [validated, setValidated] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [alert, setAlert] = useState(null);
+
+  if (getAdminToken()) return <Navigate to="/dashboard" replace />;
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -32,8 +34,8 @@ export default function SignIn() {
 
       localStorage.setItem(ADMIN_SESSION_KEY, data.token);
       localStorage.setItem("admin", JSON.stringify(data.user));
-      setAlert({ type: "success", message: "Login successful. Redirecting to dashboard..." });
-      setTimeout(() => navigate("/"), 600);
+      setAlert({ type: "success", message: "Login successful. Redirecting to the admin dashboard..." });
+      setTimeout(() => navigate("/dashboard"), 600);
     } catch (error) {
       setAlert({
         type: "danger",

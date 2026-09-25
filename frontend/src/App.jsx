@@ -1,4 +1,4 @@
-import { Navigate, Routes, Route } from "react-router-dom";
+import { Navigate, Outlet, Routes, Route } from "react-router-dom";
 import AppLayout from "./components/layout/AppLayout.jsx";
 import Dashboard from "./views/Dashboard.jsx";
 import CreateBill from "./views/CreateBill.jsx";
@@ -20,12 +20,30 @@ import AdminProfile from "./views/AdminProfile.jsx";
 import PosLogin from "./views/PosLogin.jsx";
 import PosPage from "./views/PosPage.jsx";
 import Notifications from "./views/Notifications.jsx";
+import Welcome from "./views/Welcome.jsx";
+import { getAdminToken, getPosToken } from "./api/config.js";
+
+function Landing() {
+  if (getAdminToken()) return <Navigate to="/dashboard" replace />;
+
+  let staffSession = null;
+  try { staffSession = JSON.parse(sessionStorage.getItem("avinSmartPosStaff") || "null"); } catch { /* show welcome */ }
+  if (getPosToken() && staffSession) return <Navigate to="/pos" replace />;
+
+  return <Welcome />;
+}
+
+function RequireAdmin() {
+  return getAdminToken() ? <Outlet /> : <Navigate to="/" replace />;
+}
 
 export default function App() {
   return (
     <Routes>
-      <Route element={<AppLayout />}>
-        <Route path="/" element={<Dashboard />} />
+      <Route path="/" element={<Landing />} />
+      <Route element={<RequireAdmin />}>
+        <Route element={<AppLayout />}>
+        <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/inventory" element={<Inventory />} />
         <Route path="/products/create" element={<Navigate to="/outlets" replace />} />
         <Route path="/categories/add" element={<Navigate to="/outlets" replace />} />
@@ -42,6 +60,7 @@ export default function App() {
         <Route path="/staff" element={<ManageStaff />} />
         <Route path="/staff/register" element={<RegisterStaff />} />
         <Route path="/staff/salaries" element={<ManageSalaries />} />
+        </Route>
       </Route>
       <Route path="/pos/login" element={<PosLogin />} />
       <Route path="/pos" element={<PosPage />} />

@@ -2,7 +2,7 @@ import { Link, NavLink, useNavigate } from "react-router-dom";
 import { ADMIN_SESSION_KEY } from "../../api/config.js";
 
 const mainLinks = [
-  { to: "/", icon: "ti ti-home", label: "Dashboard", end: true },
+  { to: "/dashboard", icon: "ti ti-home", label: "Dashboard", end: true },
   { to: "/inventory", icon: "ti ti-box-seam", label: "Inventory" },
   { to: "/outlets", icon: "ti ti-building-store", label: "Manage Outlets" },
   { to: "/bills/create", icon: "ti ti-file-invoice", label: "Legacy Bill" },

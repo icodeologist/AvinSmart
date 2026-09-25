@@ -5,8 +5,8 @@ import { POS_SESSION_KEY } from "../api/config.js";
 
 export default function PosLogin() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState("staff@avinsmart.in");
-  const [password, setPassword] = useState("staff123");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
   async function handleSubmit(event) {
