@@ -138,3 +138,17 @@ are created with an idempotent `POST /api/v1/inventory/transfers` body such as:
 The transfer locks source and destination stock, rejects negative transfers,
 creates a destination product record when needed, and writes paired
 `transfer_out`/`transfer_in` movements.
+
+## Integration tests
+
+The POS integration suite uses a disposable PostgreSQL database and covers
+idempotent orders/payments, concurrent payment races, stock rollback, outlet
+isolation, and exact partial-payment balances.
+
+```bash
+TEST_DATABASE_URL='postgres://postgres:postgres@localhost:5432/avinsmart_test?sslmode=disable' \
+  go test ./internal/integration -run TestPOSIntegration -count=1
+```
+
+Without `TEST_DATABASE_URL`, the suite is skipped so the normal unit-test
+command remains usable on machines without PostgreSQL.
