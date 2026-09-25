@@ -87,3 +87,12 @@ Authorization: Bearer <token>
 Staff registration and login are public. Staff listing requires an `admin` or `manager`
 token. All salary endpoints require an `admin` or `manager` token. Set a long random
 `JWT_SECRET` outside local development.
+
+## Money rules
+
+Sales money is sent as decimal strings such as `"12.30"`, never JSON
+floating-point numbers. The backend stores sales amounts as exact decimal
+values with at most two decimal places (paise). Orders and bills use the
+shared pricing package, so the selected price tier is the source for the
+subtotal and final total. Tax is calculated from the selected subtotal and
+rounded once to two decimal places using half-away-from-zero rounding.

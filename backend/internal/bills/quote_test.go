@@ -50,3 +50,37 @@ func TestQuoteEndpointUsesExactDecimalTaxRate(t *testing.T) {
 		t.Fatalf("quote data = rate %s, tax %s, total %s; want 18.125, 18.13, 118.13", payload.Data.TaxRate, payload.Data.TaxAmount, payload.Data.Total)
 	}
 }
+
+func TestQuoteEndpointUsesSelectedPriceTier(t *testing.T) {
+	request := httptest.NewRequest("POST", "/api/v1/bills/quote", strings.NewReader(`{
+		"price_tier": "wholesale",
+		"items": [{
+			"name": "Tiered item",
+			"quantity": 2,
+			"unit": "pcs",
+			"retail_price": "100.00",
+			"customer_display_price": "120.00",
+			"bought_price": "80.00",
+			"whole_sale_price": "90.00"
+		}]
+	}`))
+	response := httptest.NewRecorder()
+
+	Quote(nil).ServeHTTP(response, request)
+
+	if response.Code != 200 {
+		t.Fatalf("Quote() status = %d, want 200: %s", response.Code, response.Body.String())
+	}
+	var payload struct {
+		Data struct {
+			Subtotal string `json:"subtotal"`
+			Total    string `json:"total"`
+		} `json:"data"`
+	}
+	if err := json.Unmarshal(response.Body.Bytes(), &payload); err != nil {
+		t.Fatalf("decode quote response: %v", err)
+	}
+	if payload.Data.Subtotal != "180.00" || payload.Data.Total != "180.00" {
+		t.Fatalf("wholesale quote = subtotal %s, total %s; want 180.00/180.00", payload.Data.Subtotal, payload.Data.Total)
+	}
+}
