@@ -157,6 +157,66 @@ func TestPOSIntegration(t *testing.T) {
 	})
 }
 
+func TestSalesAndInventoryHappyPath(t *testing.T) {
+	if strings.TrimSpace(os.Getenv("TEST_DATABASE_URL")) == "" {
+		t.Skip("set TEST_DATABASE_URL to run PostgreSQL happy-path integration tests")
+	}
+	db, err := database.Connect(context.Background(), os.Getenv("TEST_DATABASE_URL"))
+	if err != nil {
+		t.Fatalf("connect test database: %v", err)
+	}
+	defer func() {
+		sqlDB, _ := db.DB()
+		_ = sqlDB.Close()
+	}()
+	if err := database.AutoMigrate(db); err != nil {
+		t.Fatalf("migrate test database: %v", err)
+	}
+
+	f := newFixture(t, db)
+	managerToken, err := auth.IssueToken(f.cfg, 1, "test-sales@example.com", "manager", "staff")
+	if err != nil {
+		t.Fatal(err)
+	}
+	f.token = managerToken
+	startingQuantity := f.productA.Quantity
+
+	quote := f.request(http.MethodPost, "/api/v1/bills/quote", fmt.Sprintf(`{"outlet_id":%d,"price_tier":"retail","tax_rate":"0","discount":"0.00","items":[{"product_id":%d,"quantity":1}]}`, f.outletA.ID, f.productA.ID), "")
+	if quote.Code != http.StatusOK || !strings.Contains(quote.Body.String(), `"total":"10.00"`) {
+		t.Fatalf("bill quote status/body = %d/%s", quote.Code, quote.Body.String())
+	}
+
+	bill := f.request(http.MethodPost, "/api/v1/bills", fmt.Sprintf(`{"outlet_id":%d,"bill_number":"HAPPY-BILL-1","bill_date":"2026-09-25","payment_method":"cash","cashier":"Test Manager","price_tier":"retail","tax_rate":"0","discount":"0.00","items":[{"product_id":%d,"quantity":1}]}`, f.outletA.ID, f.productA.ID), "happy-bill")
+	if bill.Code != http.StatusCreated {
+		t.Fatalf("bill creation status/body = %d/%s", bill.Code, bill.Body.String())
+	}
+
+	orderID := f.createOrder(t, f.productA.ID, 2, "happy-order")
+	payment := f.request(http.MethodPost, fmt.Sprintf("/api/v1/orders/%d/payments", orderID), `{"amount":"20.00","method":"cash","cash_tendered":"20.00"}`, "happy-payment")
+	if payment.Code != http.StatusCreated || !strings.Contains(payment.Body.String(), `"status":"paid"`) {
+		t.Fatalf("payment status/body = %d/%s", payment.Code, payment.Body.String())
+	}
+
+	var product models.Product
+	if err := db.First(&product, f.productA.ID).Error; err != nil {
+		t.Fatal(err)
+	}
+	if product.Quantity != startingQuantity-3 {
+		t.Fatalf("final stock = %d, want %d", product.Quantity, startingQuantity-3)
+	}
+	var saleMovements int64
+	if err := db.Model(&models.InventoryMovement{}).Where("product_id = ? AND reason = ?", f.productA.ID, "sale").Count(&saleMovements).Error; err != nil {
+		t.Fatal(err)
+	}
+	if saleMovements != 2 {
+		t.Fatalf("sale movements = %d, want 2", saleMovements)
+	}
+	movements := f.request(http.MethodGet, fmt.Sprintf("/api/v1/inventory/movements?product_id=%d", f.productA.ID), "", "")
+	if movements.Code != http.StatusOK || !strings.Contains(movements.Body.String(), `"quantity_delta":-1`) || !strings.Contains(movements.Body.String(), `"quantity_delta":-2`) {
+		t.Fatalf("inventory movement status/body = %d/%s", movements.Code, movements.Body.String())
+	}
+}
+
 func newFixture(t *testing.T, db *gorm.DB) fixture {
 	t.Helper()
 	if err := db.Exec(`TRUNCATE TABLE payments, order_items, orders, inventory_movements, inventory_transfers, products, sub_categories, categories, staff_outlets, staff, outlets, idempotency_records RESTART IDENTITY CASCADE`).Error; err != nil {

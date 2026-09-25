@@ -208,3 +208,18 @@ TEST_DATABASE_URL='postgres://postgres:postgres@localhost:5432/avinsmart_test?ss
 
 Without `TEST_DATABASE_URL`, the suite is skipped so the normal unit-test
 command remains usable on machines without PostgreSQL.
+
+The repository also includes a disposable Docker test database and backend
+test runner. From the repository root:
+
+```bash
+docker compose --profile test run --rm --build backend-test
+```
+
+Run the development backend and its persistent PostgreSQL database with:
+
+```bash
+docker compose up --build backend
+```
+
+Stop the stack and remove its database volume with `docker compose down -v`.

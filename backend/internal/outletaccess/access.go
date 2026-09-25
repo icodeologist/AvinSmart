@@ -78,7 +78,7 @@ func Resolve(db *gorm.DB, principal auth.Principal, requested *uint) (uint, erro
 	}
 
 	var outlet models.Outlet
-	if err := db.Select("id").First(&outlet, *requested).Error; err != nil {
+	if err := db.Select("id, status").First(&outlet, *requested).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return 0, ErrOutletNotFound
 		}
