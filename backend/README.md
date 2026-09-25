@@ -96,3 +96,16 @@ values with at most two decimal places (paise). Orders and bills use the
 shared pricing package, so the selected price tier is the source for the
 subtotal and final total. Tax is calculated from the selected subtotal and
 rounded once to two decimal places using half-away-from-zero rounding.
+
+## Sale flows
+
+`/api/v1/orders` is the canonical POS sale flow. It owns outlet-scoped stock
+reservation, partial payments, cancellation, expiry, and payment state. New
+POS screens and integrations must use its quote, create, payment, and cancel
+endpoints.
+
+`/api/v1/bills` remains available as a compatibility path for existing invoice
+clients. It is not a second POS design: responses identify it with
+`Deprecation: true`, `X-Canonical-Sale-Flow: /api/v1/orders`, and a `Link`
+successor header. Migrate new integrations to orders while legacy clients are
+transitioned safely.
