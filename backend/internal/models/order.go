@@ -19,6 +19,8 @@ type Order struct {
 	AmountPaid           money.Amount `gorm:"column:amount_paid;type:numeric(12,2);not null;default:0" json:"amount_paid"`
 	AmountDue            money.Amount `gorm:"column:amount_due;type:numeric(12,2);not null;default:0" json:"amount_due"`
 	Cashier              string       `gorm:"column:cashier;type:varchar(120)" json:"cashier"`
+	ExpiresAt            *time.Time   `gorm:"column:expires_at;index" json:"expires_at,omitempty"`
+	CancelledAt          *time.Time   `gorm:"column:cancelled_at" json:"cancelled_at,omitempty"`
 	Items                []OrderItem  `gorm:"foreignKey:OrderID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE" json:"items,omitempty"`
 	Payments             []Payment    `gorm:"foreignKey:OrderID;constraint:OnUpdate:CASCADE,OnDelete:RESTRICT" json:"payments,omitempty"`
 	CreatedAt            time.Time    `gorm:"autoCreateTime" json:"created_at"`

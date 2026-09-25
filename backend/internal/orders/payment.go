@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"avinsmart/backend/internal/api"
 	"avinsmart/backend/internal/middleware"
@@ -69,6 +70,13 @@ func RecordPayment(db *gorm.DB) http.HandlerFunc {
 			if !allowed {
 				return outletaccess.ErrOutletForbidden
 			}
+			if err := expirePendingOrder(tx, &order, time.Now()); err != nil {
+				return err
+			}
+			if order.Status == "expired" {
+				updatedOrder = order
+				return nil
+			}
 			if order.Status == "paid" || order.AmountDue.IsZero() {
 				return fmt.Errorf("order is already paid")
 			}
@@ -101,6 +109,10 @@ func RecordPayment(db *gorm.DB) http.HandlerFunc {
 				return
 			}
 			api.WriteError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		if updatedOrder.Status == "expired" {
+			api.WriteError(w, http.StatusConflict, ErrOrderExpired.Error())
 			return
 		}
 		api.WriteSuccess(w, http.StatusCreated, map[string]any{

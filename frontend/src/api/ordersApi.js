@@ -34,3 +34,7 @@ export function quoteOrder({ items, priceTier, outletId }) {
 export function recordPayment(orderId, { amount, method }) {
   return post(`/orders/${orderId}/payments`, { amount: String(amount), method });
 }
+
+export function cancelOrder(orderId) {
+  return post(`/orders/${orderId}/cancel`, {});
+}

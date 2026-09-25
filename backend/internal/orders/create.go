@@ -66,7 +66,8 @@ func Create(db *gorm.DB) http.HandlerFunc {
 			return
 		}
 
-		order := models.Order{OrderNumber: payload.OrderNumber, OutletID: outletID, Status: "pending", PriceTier: payload.PriceTier, Cashier: strings.TrimSpace(payload.Cashier)}
+		expiresAt := time.Now().Add(pendingOrderLifetime)
+		order := models.Order{OrderNumber: payload.OrderNumber, OutletID: outletID, Status: "pending", PriceTier: payload.PriceTier, Cashier: strings.TrimSpace(payload.Cashier), ExpiresAt: &expiresAt}
 		err = db.Transaction(func(tx *gorm.DB) error {
 			products := make(map[uint]models.Product, len(payload.Items))
 			pricingItems := make([]pricing.Item, 0, len(payload.Items))

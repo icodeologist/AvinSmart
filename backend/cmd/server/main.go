@@ -7,6 +7,7 @@ import (
 
 	"avinsmart/backend/internal/config"
 	"avinsmart/backend/internal/database"
+	"avinsmart/backend/internal/orders"
 	"avinsmart/backend/internal/router"
 )
 
@@ -29,6 +30,7 @@ func main() {
 	}
 
 	log.Printf("database connected and migrated")
+	go orders.StartExpiryWorker(ctx, db)
 	log.Printf("server listening on http://localhost%s", cfg.Address)
 	if err := http.ListenAndServe(cfg.Address, router.New(db, cfg)); err != nil {
 		log.Fatal(err)

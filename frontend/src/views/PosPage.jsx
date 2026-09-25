@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { fetchProducts, productImagePath } from "../api/productsApi.js";
-import { createOrder, quoteOrder, recordPayment } from "../api/ordersApi.js";
+import { cancelOrder, createOrder, quoteOrder, recordPayment } from "../api/ordersApi.js";
 
 const money = (value) => `₹${value ?? "0.00"}`;
 
@@ -249,7 +249,7 @@ function CartPanel({
           <h1>Current order</h1>
           <small>{cart.length} product{cart.length === 1 ? "" : "s"}</small>
         </div>
-        <button type="button" className="btn btn-sm btn-light" onClick={onClear}>Clear</button>
+        <button type="button" className="btn btn-sm btn-light" onClick={onClear} disabled={submitting}>Clear</button>
       </div>
 
       <div className="pos-cart-items">
@@ -394,7 +394,21 @@ export default function PosPage() {
     }
   }
 
-  function clearOrder() {
+  async function clearOrder() {
+    if (submitting) return;
+    if (pendingOrderId) {
+      setError("");
+      setNotice("");
+      setSubmitting(true);
+      try {
+        await cancelOrder(pendingOrderId);
+      } catch (cancelError) {
+        setError(cancelError.message);
+        setSubmitting(false);
+        return;
+      }
+      setSubmitting(false);
+    }
     setCart([]);
     setPendingOrderId(null);
     setPendingAmountDue(0);
