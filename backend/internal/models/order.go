@@ -6,6 +6,8 @@ import "avinsmart/backend/internal/money"
 
 type Order struct {
 	ID                   uint         `gorm:"primaryKey" json:"id"`
+	OutletID             uint         `gorm:"column:outlet_id;not null;index" json:"outlet_id"`
+	Outlet               Outlet       `gorm:"foreignKey:OutletID;constraint:OnUpdate:CASCADE,OnDelete:RESTRICT" json:"outlet,omitempty"`
 	OrderNumber          string       `gorm:"column:order_number;type:varchar(80);not null;uniqueIndex" json:"order_number"`
 	Status               string       `gorm:"column:status;type:varchar(20);not null;default:pending;index" json:"status"`
 	PriceTier            string       `gorm:"column:price_tier;type:varchar(40);not null;default:retail" json:"price_tier"`
@@ -44,6 +46,7 @@ func (OrderItem) TableName() string { return "order_items" }
 type Payment struct {
 	ID        uint         `gorm:"primaryKey" json:"id"`
 	OrderID   uint         `gorm:"column:order_id;not null;index" json:"order_id"`
+	OutletID  uint         `gorm:"column:outlet_id;not null;index" json:"outlet_id"`
 	Amount    money.Amount `gorm:"column:amount;type:numeric(12,2);not null" json:"amount"`
 	Method    string       `gorm:"column:method;type:varchar(40);not null" json:"method"`
 	CreatedAt time.Time    `gorm:"autoCreateTime" json:"created_at"`

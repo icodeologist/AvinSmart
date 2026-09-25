@@ -5,7 +5,9 @@ import (
 	"strings"
 
 	"avinsmart/backend/internal/api"
+	"avinsmart/backend/internal/middleware"
 	"avinsmart/backend/internal/models"
+	"avinsmart/backend/internal/outletaccess"
 	"avinsmart/backend/internal/pricing"
 
 	"gorm.io/gorm"
@@ -21,6 +23,23 @@ func Quote(db *gorm.DB) http.HandlerFunc {
 		if payload.PriceTier == "" {
 			payload.PriceTier = defaultPriceTier
 		}
+		principal, authenticated := middleware.PrincipalFromContext(r.Context())
+		var outletID uint
+		if !authenticated {
+			// Keep the pure pricing unit test usable without a database. The
+			// mounted HTTP route always applies RequireAuth before this handler.
+			if db != nil {
+				api.WriteError(w, http.StatusUnauthorized, "authentication is required")
+				return
+			}
+		} else {
+			var err error
+			outletID, err = outletaccess.Resolve(db, principal, payload.OutletID)
+			if err != nil {
+				writeOutletError(w, err)
+				return
+			}
+		}
 		products := make(map[uint]models.Product, len(payload.Items))
 		items := make([]pricing.Item, 0, len(payload.Items))
 		for _, item := range payload.Items {
@@ -31,7 +50,7 @@ func Quote(db *gorm.DB) http.HandlerFunc {
 			var product *models.Product
 			if item.ProductID != nil && *item.ProductID != 0 {
 				loaded := &models.Product{}
-				if err := db.First(loaded, *item.ProductID).Error; err != nil {
+				if err := db.Where("id = ? AND outlet_id = ?", *item.ProductID, outletID).First(loaded).Error; err != nil {
 					api.WriteError(w, http.StatusBadRequest, "product not found")
 					return
 				}

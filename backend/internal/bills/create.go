@@ -1,14 +1,17 @@
 package bills
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
 	"time"
 
 	"avinsmart/backend/internal/api"
+	"avinsmart/backend/internal/middleware"
 	"avinsmart/backend/internal/models"
 	"avinsmart/backend/internal/money"
+	"avinsmart/backend/internal/outletaccess"
 	"avinsmart/backend/internal/pricing"
 
 	"github.com/shopspring/decimal"
@@ -42,6 +45,7 @@ type billItemRequest struct {
 
 type createBillRequest struct {
 	BillNumber    string            `json:"bill_number"`
+	OutletID      *uint             `json:"outlet_id"`
 	BillDate      string            `json:"bill_date"`
 	CustomerName  string            `json:"customer_name"`
 	CustomerPhone string            `json:"customer_phone"`
@@ -118,8 +122,19 @@ func CreateBill(db *gorm.DB) http.HandlerFunc {
 			api.WriteValidation(w, "invalid request payload", fields)
 			return
 		}
+		principal, ok := middleware.PrincipalFromContext(r.Context())
+		if !ok {
+			api.WriteError(w, http.StatusUnauthorized, "authentication is required")
+			return
+		}
+		outletID, err := outletaccess.Resolve(db, principal, payload.OutletID)
+		if err != nil {
+			writeOutletError(w, err)
+			return
+		}
 
 		bill := models.Bill{
+			OutletID:      outletID,
 			BillNumber:    payload.BillNumber,
 			BillDate:      payload.BillDate,
 			CustomerName:  strings.TrimSpace(payload.CustomerName),
@@ -143,7 +158,7 @@ func CreateBill(db *gorm.DB) http.HandlerFunc {
 
 				if item.ProductID != nil && *item.ProductID != 0 {
 					var product models.Product
-					if err := tx.Clauses(lockProductsForUpdate()).First(&product, *item.ProductID).Error; err != nil {
+					if err := tx.Clauses(lockProductsForUpdate()).Where("id = ? AND outlet_id = ?", *item.ProductID, outletID).First(&product).Error; err != nil {
 						if err == gorm.ErrRecordNotFound {
 							return &insufficientStockError{product: item.Name}
 						}
@@ -205,5 +220,18 @@ func CreateBill(db *gorm.DB) http.HandlerFunc {
 		}
 
 		api.WriteSuccess(w, http.StatusCreated, bill)
+	}
+}
+
+func writeOutletError(w http.ResponseWriter, err error) {
+	switch {
+	case errors.Is(err, outletaccess.ErrOutletRequired):
+		api.WriteError(w, http.StatusBadRequest, err.Error())
+	case errors.Is(err, outletaccess.ErrOutletForbidden):
+		api.WriteError(w, http.StatusForbidden, err.Error())
+	case errors.Is(err, outletaccess.ErrOutletNotFound):
+		api.WriteError(w, http.StatusNotFound, err.Error())
+	default:
+		api.WriteError(w, http.StatusBadRequest, err.Error())
 	}
 }

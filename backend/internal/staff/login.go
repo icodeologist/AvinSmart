@@ -44,7 +44,7 @@ func Login(db *gorm.DB, cfg config.Config) http.HandlerFunc {
 		}
 
 		var member models.Staff
-		if err := db.Where("email = ?", payload.Email).First(&member).Error; err != nil {
+		if err := db.Preload("Outlets").Where("email = ?", payload.Email).First(&member).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				api.WriteError(w, http.StatusUnauthorized, "invalid email or password")
 				return

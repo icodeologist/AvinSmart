@@ -23,12 +23,12 @@ async function post(path, payload) {
   return data;
 }
 
-export function createOrder({ items, priceTier, cashier }) {
-  return post("/orders", { items, price_tier: priceTier, cashier });
+export function createOrder({ items, priceTier, cashier, outletId }) {
+  return post("/orders", { items, price_tier: priceTier, cashier, outlet_id: outletId });
 }
 
-export function quoteOrder({ items, priceTier }) {
-  return post("/orders/quote", { items, price_tier: priceTier });
+export function quoteOrder({ items, priceTier, outletId }) {
+  return post("/orders/quote", { items, price_tier: priceTier, outlet_id: outletId });
 }
 
 export function recordPayment(orderId, { amount, method }) {

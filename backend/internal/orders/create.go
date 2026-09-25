@@ -1,14 +1,17 @@
 package orders
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
 	"time"
 
 	"avinsmart/backend/internal/api"
+	"avinsmart/backend/internal/middleware"
 	"avinsmart/backend/internal/models"
 	"avinsmart/backend/internal/money"
+	"avinsmart/backend/internal/outletaccess"
 	"avinsmart/backend/internal/pricing"
 
 	"github.com/go-chi/chi/v5"
@@ -24,6 +27,7 @@ type itemRequest struct {
 
 type createRequest struct {
 	OrderNumber string        `json:"order_number"`
+	OutletID    *uint         `json:"outlet_id"`
 	PriceTier   string        `json:"price_tier"`
 	Cashier     string        `json:"cashier"`
 	Items       []itemRequest `json:"items"`
@@ -51,9 +55,19 @@ func Create(db *gorm.DB) http.HandlerFunc {
 			api.WriteError(w, http.StatusBadRequest, "at least one item is required")
 			return
 		}
+		principal, ok := middleware.PrincipalFromContext(r.Context())
+		if !ok {
+			api.WriteError(w, http.StatusUnauthorized, "authentication is required")
+			return
+		}
+		outletID, err := outletaccess.Resolve(db, principal, payload.OutletID)
+		if err != nil {
+			writeOutletError(w, err)
+			return
+		}
 
-		order := models.Order{OrderNumber: payload.OrderNumber, Status: "pending", PriceTier: payload.PriceTier, Cashier: strings.TrimSpace(payload.Cashier)}
-		err := db.Transaction(func(tx *gorm.DB) error {
+		order := models.Order{OrderNumber: payload.OrderNumber, OutletID: outletID, Status: "pending", PriceTier: payload.PriceTier, Cashier: strings.TrimSpace(payload.Cashier)}
+		err = db.Transaction(func(tx *gorm.DB) error {
 			products := make(map[uint]models.Product, len(payload.Items))
 			pricingItems := make([]pricing.Item, 0, len(payload.Items))
 			for _, item := range payload.Items {
@@ -61,7 +75,7 @@ func Create(db *gorm.DB) http.HandlerFunc {
 					return fmt.Errorf("product_id and quantity must be positive")
 				}
 				var product models.Product
-				if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&product, item.ProductID).Error; err != nil {
+				if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("id = ? AND outlet_id = ?", item.ProductID, outletID).First(&product).Error; err != nil {
 					return fmt.Errorf("product %d not found", item.ProductID)
 				}
 				if product.Quantity < item.Quantity {
@@ -96,8 +110,13 @@ func Create(db *gorm.DB) http.HandlerFunc {
 
 func Get(db *gorm.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		principal, ok := middleware.PrincipalFromContext(r.Context())
+		if !ok {
+			api.WriteError(w, http.StatusUnauthorized, "authentication is required")
+			return
+		}
 		var order models.Order
-		if err := db.Preload("Items").Preload("Payments").First(&order, chi.URLParam(r, "id")).Error; err != nil {
+		if err := db.Preload("Items").Preload("Payments").Preload("Outlet").First(&order, chi.URLParam(r, "id")).Error; err != nil {
 			if err == gorm.ErrRecordNotFound {
 				api.WriteError(w, http.StatusNotFound, "order not found")
 				return
@@ -105,6 +124,28 @@ func Get(db *gorm.DB) http.HandlerFunc {
 			api.WriteError(w, http.StatusInternalServerError, "could not fetch order")
 			return
 		}
+		allowed, err := outletaccess.CanAccess(db, principal, order.OutletID)
+		if err != nil {
+			api.WriteError(w, http.StatusInternalServerError, "could not check outlet access")
+			return
+		}
+		if !allowed {
+			api.WriteError(w, http.StatusNotFound, "order not found")
+			return
+		}
 		api.WriteSuccess(w, http.StatusOK, order)
+	}
+}
+
+func writeOutletError(w http.ResponseWriter, err error) {
+	switch {
+	case errors.Is(err, outletaccess.ErrOutletRequired):
+		api.WriteError(w, http.StatusBadRequest, err.Error())
+	case errors.Is(err, outletaccess.ErrOutletForbidden):
+		api.WriteError(w, http.StatusForbidden, err.Error())
+	case errors.Is(err, outletaccess.ErrOutletNotFound):
+		api.WriteError(w, http.StatusNotFound, err.Error())
+	default:
+		api.WriteError(w, http.StatusBadRequest, err.Error())
 	}
 }

@@ -11,8 +11,10 @@ import (
 	"time"
 
 	"avinsmart/backend/internal/api"
+	"avinsmart/backend/internal/middleware"
 	"avinsmart/backend/internal/models"
 	"avinsmart/backend/internal/money"
+	"avinsmart/backend/internal/outletaccess"
 
 	"gorm.io/gorm"
 )
@@ -85,16 +87,27 @@ func CreateProduct(db *gorm.DB) http.HandlerFunc {
 			api.WriteValidation(w, "invalid request payload", fields)
 			return
 		}
+		principal, ok := middleware.PrincipalFromContext(r.Context())
+		if !ok {
+			api.WriteError(w, http.StatusUnauthorized, "authentication is required")
+			return
+		}
 
 		outletID := payload.OutletID
 		if outletID == nil || *outletID == 0 {
-			var seed models.Outlet
-			if err := db.Where(models.Outlet{Name: "Main Branch"}).First(&seed).Error; err != nil {
-				api.WriteError(w, http.StatusInternalServerError, "could not resolve outlet")
+			resolved, err := outletaccess.Resolve(db, principal, nil)
+			if err != nil {
+				writeOutletError(w, err)
 				return
 			}
-			seedID := seed.ID
-			outletID = &seedID
+			outletID = &resolved
+		} else {
+			resolved, err := outletaccess.Resolve(db, principal, outletID)
+			if err != nil {
+				writeOutletError(w, err)
+				return
+			}
+			outletID = &resolved
 		}
 
 		imageURL := ""
@@ -149,6 +162,19 @@ func CreateProduct(db *gorm.DB) http.HandlerFunc {
 		}
 
 		api.WriteSuccess(w, http.StatusCreated, product)
+	}
+}
+
+func writeOutletError(w http.ResponseWriter, err error) {
+	switch {
+	case errors.Is(err, outletaccess.ErrOutletRequired):
+		api.WriteError(w, http.StatusBadRequest, err.Error())
+	case errors.Is(err, outletaccess.ErrOutletForbidden):
+		api.WriteError(w, http.StatusForbidden, err.Error())
+	case errors.Is(err, outletaccess.ErrOutletNotFound):
+		api.WriteError(w, http.StatusNotFound, err.Error())
+	default:
+		api.WriteError(w, http.StatusBadRequest, err.Error())
 	}
 }
 

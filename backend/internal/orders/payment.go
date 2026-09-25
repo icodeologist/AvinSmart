@@ -1,13 +1,16 @@
 package orders
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
 
 	"avinsmart/backend/internal/api"
+	"avinsmart/backend/internal/middleware"
 	"avinsmart/backend/internal/models"
 	"avinsmart/backend/internal/money"
+	"avinsmart/backend/internal/outletaccess"
 
 	"github.com/go-chi/chi/v5"
 	"gorm.io/gorm"
@@ -42,6 +45,11 @@ func RecordPayment(db *gorm.DB) http.HandlerFunc {
 			api.WriteError(w, http.StatusBadRequest, "method is required")
 			return
 		}
+		principal, ok := middleware.PrincipalFromContext(r.Context())
+		if !ok {
+			api.WriteError(w, http.StatusUnauthorized, "authentication is required")
+			return
+		}
 
 		var payment models.Payment
 		var updatedOrder models.Order
@@ -54,13 +62,20 @@ func RecordPayment(db *gorm.DB) http.HandlerFunc {
 				}
 				return err
 			}
+			allowed, err := outletaccess.CanAccess(tx, principal, order.OutletID)
+			if err != nil {
+				return err
+			}
+			if !allowed {
+				return outletaccess.ErrOutletForbidden
+			}
 			if order.Status == "paid" || order.AmountDue.IsZero() {
 				return fmt.Errorf("order is already paid")
 			}
 			if payload.Amount.GreaterThan(order.AmountDue) {
 				return fmt.Errorf("payment exceeds amount due of %s", order.AmountDue.String())
 			}
-			payment = models.Payment{OrderID: order.ID, Amount: payload.Amount, Method: payload.Method}
+			payment = models.Payment{OrderID: order.ID, OutletID: order.OutletID, Amount: payload.Amount, Method: payload.Method}
 			order.AmountPaid = order.AmountPaid.Add(payload.Amount)
 			order.AmountDue = order.Total.Sub(order.AmountPaid)
 			if order.AmountDue.IsZero() {
@@ -78,6 +93,10 @@ func RecordPayment(db *gorm.DB) http.HandlerFunc {
 		})
 		if err != nil {
 			if err == gorm.ErrRecordNotFound {
+				api.WriteError(w, http.StatusNotFound, "order not found")
+				return
+			}
+			if errors.Is(err, outletaccess.ErrOutletForbidden) {
 				api.WriteError(w, http.StatusNotFound, "order not found")
 				return
 			}

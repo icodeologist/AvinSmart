@@ -12,6 +12,7 @@ type Outlet struct {
 	Status        string     `gorm:"column:status;type:varchar(20);not null;default:active" json:"status"`
 	CreatedAt     time.Time  `gorm:"column:created_at;autoCreateTime" json:"created_at"`
 	LockedAt      *time.Time `gorm:"column:locked_at" json:"locked_at,omitempty"`
+	Staff         []Staff    `gorm:"many2many:staff_outlets;" json:"staff,omitempty"`
 }
 
 func (Outlet) TableName() string {

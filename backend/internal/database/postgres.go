@@ -34,12 +34,38 @@ func Connect(ctx context.Context, databaseURL string) (*gorm.DB, error) {
 }
 
 func AutoMigrate(db *gorm.DB) error {
+	// Create/seed the outlet table before adding non-null outlet ownership to
+	// legacy sales rows. This lets us backfill old data before foreign keys are
+	// created by the full migration below.
+	if err := db.AutoMigrate(&models.Outlet{}); err != nil {
+		return err
+	}
+	outlet, err := seedDefaultOutlet(db)
+	if err != nil {
+		return err
+	}
+	if err := prepareOutletOwnershipColumns(db, outlet.ID); err != nil {
+		return err
+	}
+
+	if db.Migrator().HasTable(&models.Product{}) {
+		if !db.Migrator().HasColumn(&models.Product{}, "outlet_id") {
+			if err := db.Migrator().AddColumn(&models.Product{}, "outlet_id"); err != nil {
+				return err
+			}
+		}
+		if err := db.Model(&models.Product{}).Where("outlet_id = 0").Update("outlet_id", outlet.ID).Error; err != nil {
+			return err
+		}
+	}
+
 	if err := db.AutoMigrate(
 		&models.Admin{},
 		&models.Category{},
 		&models.SubCategory{},
 		&models.Outlet{},
 		&models.Staff{},
+		&models.StaffOutlet{},
 		&models.Salary{},
 		&models.Attendance{},
 		&models.LeaveRequest{},
@@ -64,28 +90,29 @@ func AutoMigrate(db *gorm.DB) error {
 		}
 	}
 
-	outlet, err := seedDefaultOutlet(db)
-	if err != nil {
-		return err
+	return db.AutoMigrate(&models.Product{})
+}
+
+func prepareOutletOwnershipColumns(db *gorm.DB, outletID uint) error {
+	if db.Dialector.Name() != "postgres" {
+		return nil
 	}
-
-	// Migrate products last. Existing rows get outlet_id filled in first so
-	// Postgres can create the FK constraint without referencing a missing row.
-	if db.Migrator().HasTable(&models.Product{}) {
-		if !db.Migrator().HasColumn(&models.Product{}, "outlet_id") {
-			if err := db.Migrator().AddColumn(&models.Product{}, "outlet_id"); err != nil {
-				return err
-			}
+	for _, table := range []string{"orders", "bills", "payments"} {
+		if !db.Migrator().HasTable(table) || db.Migrator().HasColumn(table, "outlet_id") {
+			continue
 		}
-
-		if err := db.Model(&models.Product{}).
-			Where("outlet_id = 0").
-			Update("outlet_id", outlet.ID).Error; err != nil {
+		if err := db.Exec(`ALTER TABLE "` + table + `" ADD COLUMN "outlet_id" bigint NOT NULL DEFAULT 0`).Error; err != nil {
 			return err
 		}
 	}
-
-	return db.AutoMigrate(&models.Product{})
+	for _, table := range []string{"orders", "bills", "payments"} {
+		if db.Migrator().HasTable(table) {
+			if err := db.Exec(`UPDATE "`+table+`" SET "outlet_id" = ? WHERE "outlet_id" = 0`, outletID).Error; err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 func migrateBillTaxRate(db *gorm.DB) error {

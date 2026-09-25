@@ -35,9 +35,12 @@ function authHeaders() {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
-export async function fetchProducts(search = "") {
+export async function fetchProducts(search = "", outletId = "") {
   try {
-    const query = search.trim() ? `?q=${encodeURIComponent(search.trim())}` : "";
+    const params = new URLSearchParams();
+    if (search.trim()) params.set("q", search.trim());
+    if (outletId) params.set("outlet_id", String(outletId));
+    const query = params.toString() ? `?${params.toString()}` : "";
     const response = await fetch(`${API_BASE_URL}/products${query}`, { headers: authHeaders() });
     const data = unwrap(await response.json().catch(() => []));
 

@@ -12,6 +12,7 @@ type Staff struct {
 	Status       string    `gorm:"column:status;type:varchar(20);not null;default:active" json:"status"`
 	CreatedAt    time.Time `gorm:"column:created_at;autoCreateTime" json:"created_at"`
 	UpdatedAt    time.Time `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
+	Outlets      []Outlet  `gorm:"many2many:staff_outlets;" json:"outlets,omitempty"`
 }
 
 func (Staff) TableName() string {

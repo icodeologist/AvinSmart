@@ -4,8 +4,10 @@ import (
 	"net/http"
 
 	"avinsmart/backend/internal/api"
+	"avinsmart/backend/internal/middleware"
 	"avinsmart/backend/internal/models"
 	"avinsmart/backend/internal/money"
+	"avinsmart/backend/internal/outletaccess"
 	"avinsmart/backend/internal/pricing"
 
 	"github.com/shopspring/decimal"
@@ -15,6 +17,7 @@ import (
 type quoteRequest struct {
 	Items     []itemRequest `json:"items"`
 	PriceTier string        `json:"price_tier"`
+	OutletID  *uint         `json:"outlet_id"`
 }
 
 func Quote(db *gorm.DB) http.HandlerFunc {
@@ -27,6 +30,16 @@ func Quote(db *gorm.DB) http.HandlerFunc {
 		if payload.PriceTier == "" {
 			payload.PriceTier = "retail"
 		}
+		principal, ok := middleware.PrincipalFromContext(r.Context())
+		if !ok {
+			api.WriteError(w, http.StatusUnauthorized, "authentication is required")
+			return
+		}
+		outletID, err := outletaccess.Resolve(db, principal, payload.OutletID)
+		if err != nil {
+			writeOutletError(w, err)
+			return
+		}
 		products := make(map[uint]models.Product, len(payload.Items))
 		items := make([]pricing.Item, 0, len(payload.Items))
 		for _, item := range payload.Items {
@@ -35,7 +48,7 @@ func Quote(db *gorm.DB) http.HandlerFunc {
 				api.WriteError(w, http.StatusBadRequest, "product_id must be positive")
 				return
 			}
-			if err := db.First(&product, item.ProductID).Error; err != nil {
+			if err := db.Where("id = ? AND outlet_id = ?", item.ProductID, outletID).First(&product).Error; err != nil {
 				api.WriteError(w, http.StatusBadRequest, "product not found")
 				return
 			}

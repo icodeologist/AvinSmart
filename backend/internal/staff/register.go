@@ -1,6 +1,7 @@
 package staff
 
 import (
+	"errors"
 	"net/http"
 	"strings"
 
@@ -19,11 +20,12 @@ var validRoles = map[string]bool{
 }
 
 type registerRequest struct {
-	Name     string `json:"name"`
-	Email    string `json:"email"`
-	Password string `json:"password"`
-	Phone    string `json:"phone"`
-	Role     string `json:"role"`
+	Name      string `json:"name"`
+	Email     string `json:"email"`
+	Password  string `json:"password"`
+	Phone     string `json:"phone"`
+	Role      string `json:"role"`
+	OutletIDs []uint `json:"outlet_ids"`
 }
 
 func (r *registerRequest) validate() api.Fields {
@@ -49,6 +51,9 @@ func (r *registerRequest) validate() api.Fields {
 	}
 	if !validRoles[r.Role] {
 		fields.Add("role", "role must be one of: manager, sales, inventory, support")
+	}
+	if requiresOutlet(r.Role) && len(r.OutletIDs) == 0 {
+		fields.Add("outlet_ids", "at least one outlet is required for this role")
 	}
 
 	return fields
@@ -81,14 +86,29 @@ func Register(db *gorm.DB) http.HandlerFunc {
 			Status:       "active",
 		}
 
-		if err := db.Create(&member).Error; err != nil {
+		err = db.Transaction(func(tx *gorm.DB) error {
+			if err := tx.Create(&member).Error; err != nil {
+				return err
+			}
+			outlets, err := loadActiveOutlets(tx, payload.OutletIDs)
+			if err != nil {
+				return err
+			}
+			return tx.Model(&member).Association("Outlets").Replace(outlets)
+		})
+		if err != nil {
 			if api.IsUniqueViolation(err) {
 				api.WriteError(w, http.StatusConflict, "staff email already exists")
+				return
+			}
+			if errors.Is(err, errOutletAssignment) {
+				api.WriteError(w, http.StatusBadRequest, err.Error())
 				return
 			}
 			api.WriteError(w, http.StatusInternalServerError, "could not create staff")
 			return
 		}
+		db.Preload("Outlets").First(&member, member.ID)
 
 		api.WriteSuccess(w, http.StatusCreated, member)
 	}

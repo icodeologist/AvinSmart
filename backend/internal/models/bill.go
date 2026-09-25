@@ -10,6 +10,8 @@ import (
 
 type Bill struct {
 	ID                   uint            `gorm:"primaryKey;column:id" json:"id"`
+	OutletID             uint            `gorm:"column:outlet_id;not null;index" json:"outlet_id"`
+	Outlet               Outlet          `gorm:"foreignKey:OutletID;constraint:OnUpdate:CASCADE,OnDelete:RESTRICT" json:"outlet,omitempty"`
 	BillNumber           string          `gorm:"column:bill_number;type:varchar(80);not null;uniqueIndex" json:"bill_number"`
 	BillDate             string          `gorm:"column:bill_date;type:varchar(10);not null" json:"bill_date"`
 	CustomerName         string          `gorm:"column:customer_name;type:varchar(180)" json:"customer_name"`

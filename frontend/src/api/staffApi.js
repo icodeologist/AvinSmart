@@ -13,6 +13,7 @@ function normalize(member) {
     phone: member.phone || "",
     role: member.role || "staff",
     status: member.status || "active",
+    outlets: Array.isArray(member.outlets) ? member.outlets : [],
     joinedOn: member.joinedOn || member.created_at || "",
     passwordSet: true,
   };

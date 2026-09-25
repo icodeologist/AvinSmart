@@ -15,11 +15,12 @@ import (
 )
 
 type updateRequest struct {
-	Name   string `json:"name"`
-	Email  string `json:"email"`
-	Phone  string `json:"phone"`
-	Role   string `json:"role"`
-	Status string `json:"status"`
+	Name      string  `json:"name"`
+	Email     string  `json:"email"`
+	Phone     string  `json:"phone"`
+	Role      string  `json:"role"`
+	Status    string  `json:"status"`
+	OutletIDs *[]uint `json:"outlet_ids"`
 }
 
 type passwordRequest struct {
@@ -56,6 +57,11 @@ func Update(db *gorm.DB) http.HandlerFunc {
 			api.WriteValidation(w, "invalid request payload", fields)
 			return
 		}
+		if payload.OutletIDs != nil && requiresOutlet(payload.Role) && len(*payload.OutletIDs) == 0 {
+			fields.Add("outlet_ids", "at least one outlet is required for this role")
+			api.WriteValidation(w, "invalid request payload", fields)
+			return
+		}
 
 		member, err := findMember(db, id)
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -72,14 +78,32 @@ func Update(db *gorm.DB) http.HandlerFunc {
 		member.Phone = payload.Phone
 		member.Role = payload.Role
 		member.Status = payload.Status
-		if err := db.Save(&member).Error; err != nil {
+		err = db.Transaction(func(tx *gorm.DB) error {
+			if err := tx.Save(&member).Error; err != nil {
+				return err
+			}
+			if payload.OutletIDs == nil {
+				return nil
+			}
+			outlets, err := loadActiveOutlets(tx, *payload.OutletIDs)
+			if err != nil {
+				return err
+			}
+			return tx.Model(&member).Association("Outlets").Replace(outlets)
+		})
+		if err != nil {
 			if api.IsUniqueViolation(err) {
 				api.WriteError(w, http.StatusConflict, "staff email already exists")
+				return
+			}
+			if errors.Is(err, errOutletAssignment) {
+				api.WriteError(w, http.StatusBadRequest, err.Error())
 				return
 			}
 			api.WriteError(w, http.StatusInternalServerError, "could not update staff member")
 			return
 		}
+		db.Preload("Outlets").First(&member, member.ID)
 		api.WriteSuccess(w, http.StatusOK, member)
 	}
 }

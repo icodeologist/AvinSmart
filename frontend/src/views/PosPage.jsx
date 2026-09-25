@@ -16,7 +16,7 @@ function normalizeProduct(product) {
   };
 }
 
-function PosHeader({ staff, onLogout }) {
+function PosHeader({ staff, outletId, onOutlet, onLogout }) {
   return (
     <header className="pos-topbar">
       <div className="avin-logo" aria-label="AvinSmart">
@@ -26,6 +26,11 @@ function PosHeader({ staff, onLogout }) {
       </div>
 
       <div className="pos-staff">
+        {staff.outlets?.length > 0 && (
+          <select className="form-select form-select-sm" value={outletId || ""} onChange={(event) => onOutlet(event.target.value)} aria-label="Sales outlet">
+            {staff.outlets.map((outlet) => <option value={outlet.id} key={outlet.id}>{outlet.name}</option>)}
+          </select>
+        )}
         <span>
           <strong>{staff.name}</strong>
           <small>{staff.role || "Staff"} counter</small>
@@ -273,6 +278,8 @@ function CartPanel({
 export default function PosPage() {
   const navigate = useNavigate();
   const staff = JSON.parse(sessionStorage.getItem("avinSmartPosStaff") || "null");
+  const initialOutlet = staff?.outlets?.[0]?.id || "";
+  const [outletId, setOutletId] = useState(String(initialOutlet));
   const [products, setProducts] = useState([]);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
@@ -291,7 +298,7 @@ export default function PosPage() {
   useEffect(() => {
     let active = true;
 
-    fetchProducts()
+    fetchProducts("", outletId)
       .then((data) => {
         if (active) setProducts(data.map(normalizeProduct));
       })
@@ -303,7 +310,7 @@ export default function PosPage() {
       });
 
     return () => { active = false; };
-  }, []);
+  }, [outletId]);
 
   const categories = useMemo(
     () => ["All", ...new Set(products.map((product) => product.category))],
@@ -316,11 +323,11 @@ export default function PosPage() {
     }
     let active = true;
     const backendTier = priceTier === "original" ? "customer_display" : priceTier;
-    quoteOrder({ items: cart.map((item) => ({ product_id: item.id, quantity: item.quantity })), priceTier: backendTier })
+    quoteOrder({ items: cart.map((item) => ({ product_id: item.id, quantity: item.quantity })), priceTier: backendTier, outletId })
       .then((data) => { if (active) setQuote(data); })
       .catch((quoteError) => { if (active) setError(quoteError.message); });
     return () => { active = false; };
-  }, [cart, priceTier, pendingOrderId]);
+  }, [cart, priceTier, pendingOrderId, outletId]);
 
   const amountDue = pendingOrderId ? pendingAmountDue : quote?.total;
 
@@ -357,6 +364,7 @@ export default function PosPage() {
           items: cart.map((item) => ({ product_id: item.id, quantity: item.quantity })),
           priceTier: backendTier,
           cashier: staff.name || staff.email,
+          outletId,
         });
         orderId = order.id;
         due = order.amount_due;
@@ -402,9 +410,11 @@ export default function PosPage() {
 
   if (!staff) return <Navigate to="/pos/login" replace />;
 
+  if (!outletId) return <main className="pos-login-shell"><div className="alert alert-danger">This staff account is not assigned to an active outlet.</div></main>;
+
   return (
     <main className="pos-shell">
-      <PosHeader staff={staff} onLogout={logout} />
+      <PosHeader staff={staff} outletId={outletId} onOutlet={(value) => { clearOrder(); setOutletId(value); }} onLogout={logout} />
 
       <div className="pos-workspace">
         <ProductCatalog
