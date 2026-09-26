@@ -8,6 +8,7 @@ type Staff struct {
 	Email        string    `gorm:"column:email;type:varchar(180);not null;uniqueIndex" json:"email"`
 	PasswordHash string    `gorm:"column:password_hash;type:text;not null" json:"-"`
 	Phone        string    `gorm:"column:phone;type:varchar(40);not null" json:"phone"`
+	Photo        string    `gorm:"column:photo;type:text" json:"photo"`
 	Role         string    `gorm:"column:role;type:varchar(40);not null" json:"role"`
 	Status       string    `gorm:"column:status;type:varchar(20);not null;default:active" json:"status"`
 	CreatedAt    time.Time `gorm:"column:created_at;autoCreateTime" json:"created_at"`

@@ -34,6 +34,8 @@ export default function SignIn() {
 
       localStorage.setItem(ADMIN_SESSION_KEY, data.token);
       localStorage.setItem("admin", JSON.stringify(data.user));
+      localStorage.removeItem("avinSmartPosToken");
+      sessionStorage.removeItem("avinSmartPosStaff");
       setAlert({ type: "success", message: "Login successful. Redirecting to the admin dashboard..." });
       setTimeout(() => navigate("/dashboard"), 600);
     } catch (error) {

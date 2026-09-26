@@ -55,14 +55,17 @@ export async function createProduct(formData) {
   try {
     const response = await fetch(`${API_BASE_URL}/products`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", ...authHeaders("admin") },
+      headers: { "Content-Type": "application/json", ...authHeaders(getPosToken() ? "pos" : "admin") },
       body: JSON.stringify(formData),
     });
 
     const data = unwrap(await response.json().catch(() => ({})));
 
     if (!response.ok) {
-      throw new Error(data.error || "Could not create product");
+      const fieldErrors = data.fields
+        ? Object.entries(data.fields).flatMap(([field, messages]) => messages.map((message) => `${field}: ${message}`)).join("; ")
+        : "";
+      throw new Error(fieldErrors ? `${data.error || "Could not create product"} — ${fieldErrors}` : data.error || "Could not create product");
     }
 
     return data;
@@ -77,7 +80,7 @@ export async function createProduct(formData) {
 export async function updateProductPrices(productId, prices) {
   const response = await fetch(`${API_BASE_URL}/products/${productId}/prices`, {
     method: "PATCH",
-    headers: { "Content-Type": "application/json", ...authHeaders("admin") },
+    headers: { "Content-Type": "application/json", ...authHeaders(getPosToken() ? "pos" : "admin") },
     body: JSON.stringify({
       quantity: Number(prices.quantity || 0),
       retail_price: String(prices.retail_price || "0.00"),
@@ -94,7 +97,7 @@ export async function updateProductPrices(productId, prices) {
 }
 
 export async function fetchProductPriceHistory(productId) {
-  const response = await fetch(`${API_BASE_URL}/products/${productId}/price-history`, { headers: authHeaders("admin") });
+  const response = await fetch(`${API_BASE_URL}/products/${productId}/price-history`, { headers: authHeaders(getPosToken() ? "pos" : "admin") });
   const body = await response.json().catch(() => ({}));
   const data = unwrap(body);
   if (!response.ok) throw new Error(data.error || "Could not fetch price history");
@@ -102,7 +105,7 @@ export async function fetchProductPriceHistory(productId) {
 }
 
 export async function fetchRecentPriceHistory() {
-  const response = await fetch(`${API_BASE_URL}/products/price-history/recent`, { headers: authHeaders("admin") });
+  const response = await fetch(`${API_BASE_URL}/products/price-history/recent`, { headers: authHeaders(getPosToken() ? "pos" : "admin") });
   const body = await response.json().catch(() => ({}));
   const data = unwrap(body);
   if (!response.ok) throw new Error(data.error || "Could not fetch recent price history");

@@ -16,6 +16,8 @@ export default function PosLogin({ role = "sales" }) {
       const result = await loginStaff(email, password, role);
       localStorage.setItem(POS_SESSION_KEY, result.token);
       sessionStorage.setItem("avinSmartPosStaff", JSON.stringify(result.user));
+      localStorage.removeItem("avinSmartAdminToken");
+      localStorage.removeItem("admin");
       navigate(result.user.role === "inventory_staff" ? "/inventory" : "/pos");
     } catch (loginError) {
       setError(loginError.message || "Invalid staff email or password.");

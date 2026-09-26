@@ -1,8 +1,14 @@
 package auth
 
 import (
+	"encoding/base64"
+	"errors"
+	"fmt"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
+	"time"
 
 	"avinsmart/backend/internal/api"
 	"avinsmart/backend/internal/models"
@@ -17,6 +23,7 @@ type registerAdminRequest struct {
 	Password        string `json:"password"`
 	ReenterPassword string `json:"reenter_password"`
 	PhoneNum        string `json:"phone_num"`
+	PhotoBase64     string `json:"photo_base64"`
 }
 
 func (r *registerAdminRequest) validate() api.Fields {
@@ -51,6 +58,9 @@ func (r *registerAdminRequest) validate() api.Fields {
 	if r.PhoneNum == "" {
 		fields.Add("phone_num", "phone_num is required")
 	}
+	if strings.TrimSpace(r.PhotoBase64) == "" {
+		fields.Add("photo", "a profile photo is required")
+	}
 
 	return fields
 }
@@ -73,12 +83,18 @@ func RegisterAdmin(db *gorm.DB) http.HandlerFunc {
 			api.WriteError(w, http.StatusInternalServerError, "could not secure password")
 			return
 		}
+		photo, err := saveAdminPhoto(payload.PhotoBase64)
+		if err != nil {
+			api.WriteError(w, http.StatusBadRequest, "invalid profile photo")
+			return
+		}
 
 		admin := models.Admin{
 			Username:     payload.Username,
 			Email:        payload.Email,
 			PasswordHash: string(passwordHash),
 			PhoneNum:     payload.PhoneNum,
+			Photo:        photo,
 		}
 
 		if err := db.Create(&admin).Error; err != nil {
@@ -93,4 +109,28 @@ func RegisterAdmin(db *gorm.DB) http.HandlerFunc {
 
 		api.WriteSuccess(w, http.StatusCreated, admin)
 	}
+}
+
+func saveAdminPhoto(dataURI string) (string, error) {
+	comma := strings.Index(dataURI, "base64,")
+	if comma < 0 {
+		return "", errors.New("invalid data uri")
+	}
+	raw, err := base64.StdEncoding.DecodeString(dataURI[comma+len("base64,"):])
+	if err != nil || len(raw) == 0 || len(raw) > 10<<20 {
+		return "", errors.New("invalid photo data")
+	}
+	ext := map[string]string{"image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp", "image/gif": ".gif"}[http.DetectContentType(raw)]
+	if ext == "" {
+		return "", errors.New("unsupported photo type")
+	}
+	const uploadDir = "static/images/uploads"
+	if err := os.MkdirAll(uploadDir, 0o755); err != nil {
+		return "", err
+	}
+	name := fmt.Sprintf("admin-%d%s", time.Now().UnixNano(), ext)
+	if err := os.WriteFile(filepath.Join(uploadDir, name), raw, 0o644); err != nil {
+		return "", err
+	}
+	return "/static/images/uploads/" + name, nil
 }

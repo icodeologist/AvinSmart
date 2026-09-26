@@ -72,7 +72,7 @@ func Transfer(db *gorm.DB) http.HandlerFunc {
 				destination.Quantity = 0
 				destination.Outlet = models.Outlet{}
 				destination.Category = models.Category{}
-				destination.SubCategory = nil
+				destination.SubCategory = models.SubCategory{}
 				if err := tx.Create(&destination).Error; err != nil {
 					return err
 				}

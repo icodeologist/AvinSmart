@@ -14,8 +14,8 @@ type Product struct {
 	Outlet               Outlet       `gorm:"foreignKey:OutletID;constraint:OnUpdate:CASCADE,OnDelete:RESTRICT" json:"outlet,omitempty"`
 	CategoryID           uint         `gorm:"column:category_id;not null;index" json:"category_id"`
 	Category             Category     `gorm:"foreignKey:CategoryID;constraint:OnUpdate:CASCADE,OnDelete:RESTRICT" json:"category"`
-	SubCategoryID        *uint        `gorm:"column:sub_category_id;index" json:"sub_category_id,omitempty"`
-	SubCategory          *SubCategory `gorm:"foreignKey:SubCategoryID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL" json:"sub_category,omitempty"`
+	SubCategoryID        uint         `gorm:"column:sub_category_id;not null;index" json:"sub_category_id"`
+	SubCategory          SubCategory  `gorm:"foreignKey:SubCategoryID;constraint:OnUpdate:CASCADE,OnDelete:RESTRICT" json:"sub_category"`
 	SKUID                string       `gorm:"column:sku_id;type:varchar(80);not null;uniqueIndex:idx_products_outlet_sku" json:"sku_id"`
 	Quantity             int          `gorm:"column:quantity;not null;default:0" json:"quantity"`
 	Unit                 string       `gorm:"column:unit;type:varchar(40)" json:"unit"`

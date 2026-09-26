@@ -1,10 +1,25 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { getAdminToken } from "../../api/config.js";
+import { API_BASE_URL } from "../../api/config.js";
 import { fetchNotifications, fetchUnreadCount, markAllNotificationsRead, markNotificationRead } from "../../api/notificationsApi.js";
 
-function storedAdmin() {
-  try { return JSON.parse(localStorage.getItem("admin") || "null"); } catch { return null; }
+function currentAccount() {
+  try {
+    const staff = JSON.parse(sessionStorage.getItem("avinSmartPosStaff") || "null");
+    if (staff) return { ...staff, accountType: "staff" };
+    const admin = JSON.parse(localStorage.getItem("admin") || "null");
+    return admin ? { ...admin, accountType: "admin" } : null;
+  } catch {
+    return null;
+  }
+}
+
+function photoPath(photo) {
+  if (!photo) return "/assets/images/avatar/avatar-1.jpg";
+  if (photo.startsWith("http") || photo.startsWith("data:")) return photo;
+  if (photo.startsWith("/static/")) return new URL(API_BASE_URL, window.location.origin).origin + photo;
+  return photo;
 }
 
 export default function Topbar({ onToggle, onMobileOpen }) {
@@ -12,8 +27,10 @@ export default function Topbar({ onToggle, onMobileOpen }) {
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState([]);
   const [unread, setUnread] = useState(0);
-  const admin = storedAdmin();
-  const adminName = admin?.username || admin?.name || admin?.email || "Account";
+  const account = currentAccount();
+  const accountName = account?.username || account?.name || account?.email || "Account";
+  const accountRole = account?.accountType === "admin" ? "Administrator" : account?.role === "inventory_staff" ? "Inventory Staff" : "Sales Staff";
+  const accountPhoto = photoPath(account?.photo);
 
   async function refresh() {
     if (!getAdminToken()) return;
@@ -63,7 +80,7 @@ export default function Topbar({ onToggle, onMobileOpen }) {
           {items.length ? items.map((item) => <button key={item.id} type="button" className={`dropdown-item text-wrap p-3 border-bottom ${item.read_at ? "" : "bg-primary-subtle"}`} onClick={() => read(item)}><strong className="d-block">{item.title}</strong><span className="badge text-bg-light text-capitalize my-1">{item.type || "general"}</span><small className="text-muted d-block">{item.message}</small></button>) : <div className="p-3 text-muted small">No notifications yet.</div>}
           <Link to="/notifications" className="d-block text-center p-2 small" onClick={() => setOpen(false)}>View all notifications</Link>
         </div> : null}
-        <Link to="/profile" className="d-flex align-items-center gap-2 text-decoration-none" aria-label="Open admin profile"><span className="d-none d-md-block text-end"><strong className="d-block small text-dark">{adminName}</strong><small className="text-muted">Administrator</small></span><img src="/assets/images/avatar/avatar-1.jpg" alt={adminName} className="avatar avatar-sm rounded-circle" /></Link>
+        <Link to="/profile" className="d-flex align-items-center gap-2 text-decoration-none" aria-label="Open profile"><span className="d-none d-md-block text-end"><strong className="d-block small text-dark">{accountName}</strong><small className="text-muted">{accountRole}</small></span><img src={accountPhoto} alt={accountName} className="avatar avatar-sm rounded-circle" /></Link>
       </div>
     </nav>
   );

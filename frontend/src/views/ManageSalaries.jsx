@@ -74,6 +74,25 @@ function payableSalary(record) {
   return Number(record.monthlyPay || 0) * Math.min(record.workingDays, payableDays) / Math.max(record.workingDays, 1);
 }
 
+function AttendanceContributionGrid({ record, month }) {
+  const firstDay = new Date(`${month}-01T00:00:00`).getDay();
+  const cells = [...Array(firstDay).fill(null), ...record.attendance.map((status, index) => ({ status, day: index + 1 }))];
+  return (
+    <div className="border rounded-3 p-3 mb-3 bg-light-subtle">
+      <div className="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+        <div><strong>Attendance activity</strong><small className="text-muted d-block">{monthLabel(month)}</small></div>
+        <div className="d-flex gap-2 small text-muted"><span><i className="ti ti-square-filled text-success me-1" />Present</span><span><i className="ti ti-square-filled text-danger me-1" />Absent</span><span><i className="ti ti-square me-1" />Not updated</span></div>
+      </div>
+      <div className="d-grid gap-1 mb-1" style={{ gridTemplateColumns: "repeat(7, minmax(0, 1fr))" }}>
+        {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => <small className="text-center text-muted" key={day}>{day.slice(0, 1)}</small>)}
+      </div>
+      <div className="d-grid gap-1" style={{ gridTemplateColumns: "repeat(7, minmax(0, 1fr))" }}>
+        {cells.map((cell, index) => cell ? <span key={cell.day} className={`rounded-1 border ${cell.status === "present" ? "bg-success border-success" : cell.status === "absent" ? "bg-danger border-danger" : "bg-white border-secondary-subtle"}`} style={{ aspectRatio: "1 / 1", minHeight: 18 }} title={`${dateFor(month, cell.day)}: ${cell.status === "not-marked" ? "Not updated" : cell.status}`} /> : <span key={`blank-${index}`} />)}
+      </div>
+    </div>
+  );
+}
+
 export default function ManageSalaries() {
   const options = useMemo(monthOptions, []);
   const [month, setMonth] = useState(() => options[6]);
@@ -232,6 +251,7 @@ export default function ManageSalaries() {
   }
 
   return <>
+    {selected ? <section className="card mb-3"><div className="card-body"><AttendanceContributionGrid record={selected} month={month} /></div></section> : null}
     <PageHeader title="Manage Salaries" subtitle="Manage monthly pay, attendance, leave, and payroll calendars"><Link to="/staff" className="btn btn-outline-secondary"><i className="ti ti-arrow-left me-1"></i>Back to Staff</Link></PageHeader>
     {alert && <div className={`alert alert-${alert.type}`} role="alert">{alert.message}{alert.fields ? <ul className="mb-0 mt-2">{Object.entries(alert.fields).flatMap(([field, messages]) => (Array.isArray(messages) ? messages : [messages]).map((message) => <li key={`${field}-${message}`}>{field}: {message}</li>))}</ul> : null}{alert.retry ? <button type="button" className="btn btn-sm btn-outline-danger mt-2" onClick={load}>Retry</button> : null}</div>}
 

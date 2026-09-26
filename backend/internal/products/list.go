@@ -51,8 +51,7 @@ func ListProducts(db *gorm.DB) http.HandlerFunc {
 			like := "%" + search + "%"
 			query = query.Where("title ILIKE ? OR sku_id ILIKE ?", like, like)
 		}
-
-		if err := query.Order("created_at desc").Limit(20).Find(&products).Error; err != nil {
+		if err := query.Order("created_at desc NULLS LAST, id desc").Limit(20).Find(&products).Error; err != nil {
 			api.WriteError(w, http.StatusInternalServerError, "could not fetch products")
 			return
 		}

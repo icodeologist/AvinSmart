@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import PageHeader from "../components/layout/PageHeader.jsx";
 import { fetchProducts, fetchRecentPriceHistory, formatPrice, updateProductPrices } from "../api/productsApi.js";
+import { getPosToken } from "../api/config.js";
 
 const emptyPrices = {
   quantity: "0",
@@ -110,7 +111,7 @@ export default function PriceUpdates() {
     let cancelled = false;
     setLoading(true);
     setError("");
-    fetchProducts(search, "", "admin")
+    fetchProducts(search, "", getPosToken() ? "pos" : "admin")
       .then((data) => { if (!cancelled) setProducts(data); })
       .catch((loadError) => { if (!cancelled) setError(loadError.message); })
       .finally(() => { if (!cancelled) setLoading(false); });

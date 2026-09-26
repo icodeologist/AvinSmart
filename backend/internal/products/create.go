@@ -61,10 +61,6 @@ func (r *createProductRequest) validate() api.Fields {
 		fields.Add("category_name", "category_name is required")
 	}
 
-	if r.SubCategoryName == "" {
-		fields.Add("sub_category_name", "sub_category_name is required")
-	}
-
 	if r.OutletID == nil || *r.OutletID == 0 {
 		fields.Add("outlet_id", "outlet_id is required")
 	}
@@ -120,6 +116,9 @@ func CreateProduct(db *gorm.DB) http.HandlerFunc {
 			return
 		}
 
+		if payload.SubCategoryName == "" {
+			payload.SubCategoryName = "None"
+		}
 		var subCategory models.SubCategory
 		if err := db.Where(models.SubCategory{
 			CategoryID: category.ID,
@@ -134,7 +133,7 @@ func CreateProduct(db *gorm.DB) http.HandlerFunc {
 			Description:          payload.Description,
 			OutletID:             outletID,
 			CategoryID:           category.ID,
-			SubCategoryID:        &subCategory.ID,
+			SubCategoryID:        subCategory.ID,
 			SKUID:                payload.SKUID,
 			Quantity:             payload.Quantity,
 			Unit:                 payload.Unit,

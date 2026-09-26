@@ -1,9 +1,14 @@
 package staff
 
 import (
+	"encoding/base64"
 	"errors"
+	"fmt"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
+	"time"
 
 	"avinsmart/backend/internal/api"
 	"avinsmart/backend/internal/middleware"
@@ -15,20 +20,18 @@ import (
 )
 
 var validRoles = map[string]bool{
-	"manager":         true,
 	"sales":           true,
-	"inventory":       true,
 	"inventory_staff": true,
-	"support":         true,
 }
 
 type registerRequest struct {
-	Name      string `json:"name"`
-	Email     string `json:"email"`
-	Password  string `json:"password"`
-	Phone     string `json:"phone"`
-	Role      string `json:"role"`
-	OutletIDs []uint `json:"outlet_ids"`
+	Name        string `json:"name"`
+	Email       string `json:"email"`
+	Password    string `json:"password"`
+	Phone       string `json:"phone"`
+	Role        string `json:"role"`
+	OutletIDs   []uint `json:"outlet_ids"`
+	PhotoBase64 string `json:"photo_base64"`
 }
 
 func (r *registerRequest) validate() api.Fields {
@@ -52,8 +55,11 @@ func (r *registerRequest) validate() api.Fields {
 	if r.Phone == "" {
 		fields.Add("phone", "phone is required")
 	}
+	if strings.TrimSpace(r.PhotoBase64) == "" {
+		fields.Add("photo", "a profile photo is required")
+	}
 	if !validRoles[r.Role] {
-		fields.Add("role", "role must be one of: manager, sales, inventory, inventory_staff, support")
+		fields.Add("role", "role must be one of: sales, inventory_staff")
 	}
 	if requiresOutlet(r.Role) && len(r.OutletIDs) == 0 {
 		fields.Add("outlet_ids", "at least one outlet is required for this role")
@@ -92,6 +98,11 @@ func Register(db *gorm.DB) http.HandlerFunc {
 			api.WriteError(w, http.StatusInternalServerError, "could not secure staff password")
 			return
 		}
+		photo, err := saveStaffPhoto(payload.PhotoBase64)
+		if err != nil {
+			api.WriteError(w, http.StatusBadRequest, "invalid profile photo")
+			return
+		}
 
 		member := models.Staff{
 			Name:         payload.Name,
@@ -100,6 +111,7 @@ func Register(db *gorm.DB) http.HandlerFunc {
 			Phone:        payload.Phone,
 			Role:         payload.Role,
 			Status:       "active",
+			Photo:        photo,
 		}
 
 		err = db.Transaction(func(tx *gorm.DB) error {
@@ -128,4 +140,38 @@ func Register(db *gorm.DB) http.HandlerFunc {
 
 		api.WriteSuccess(w, http.StatusCreated, member)
 	}
+}
+
+func saveStaffPhoto(dataURI string) (string, error) {
+	const maxPhotoSize = 10 << 20
+	comma := strings.Index(dataURI, "base64,")
+	if comma < 0 {
+		return "", errors.New("invalid data uri")
+	}
+	raw, err := base64.StdEncoding.DecodeString(dataURI[comma+len("base64,"):])
+	if err != nil || len(raw) == 0 || len(raw) > maxPhotoSize {
+		return "", errors.New("invalid photo data")
+	}
+	ext := ".png"
+	switch http.DetectContentType(raw) {
+	case "image/jpeg":
+		ext = ".jpg"
+	case "image/png":
+		ext = ".png"
+	case "image/webp":
+		ext = ".webp"
+	case "image/gif":
+		ext = ".gif"
+	default:
+		return "", errors.New("unsupported photo type")
+	}
+	const uploadDir = "static/images/uploads"
+	if err := os.MkdirAll(uploadDir, 0o755); err != nil {
+		return "", err
+	}
+	name := fmt.Sprintf("staff-%d%s", time.Now().UnixNano(), ext)
+	if err := os.WriteFile(filepath.Join(uploadDir, name), raw, 0o644); err != nil {
+		return "", err
+	}
+	return "/static/images/uploads/" + name, nil
 }

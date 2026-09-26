@@ -13,7 +13,7 @@ import (
 
 func StaffRoutes(db *gorm.DB, cfg config.Config) http.Handler {
 	r := chi.NewRouter()
-	management := r.With(middleware.RequireAuth(cfg), middleware.RequireRoles("admin", "manager"))
+	management := r.With(middleware.RequireAuth(cfg), middleware.RequireRoles("admin"))
 	management.Get("/", staff.List(db))
 	management.Post("/", staff.Register(db))
 	management.Post("/register", staff.Register(db))

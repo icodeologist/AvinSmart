@@ -12,7 +12,7 @@ import (
 var errOutletAssignment = errors.New("one or more outlet assignments are invalid")
 
 func requiresOutlet(role string) bool {
-	return role == "manager" || role == "sales" || role == "inventory" || role == "inventory_staff"
+	return role == "sales" || role == "inventory_staff"
 }
 
 func loadActiveOutlets(db *gorm.DB, ids []uint) ([]models.Outlet, error) {

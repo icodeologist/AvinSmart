@@ -90,19 +90,46 @@ func AutoMigrate(db *gorm.DB) error {
 		return err
 	}
 
-	if db.Migrator().HasColumn(&models.Admin{}, "photo") {
-		if err := db.Migrator().DropColumn(&models.Admin{}, "photo"); err != nil {
-			return err
-		}
+	if err := ensureProductSubcategories(db); err != nil {
+		return err
 	}
-
 	if err := db.AutoMigrate(&models.Product{}, &models.InventoryMovement{}, &models.InventoryTransfer{}); err != nil {
 		return err
+	}
+	if db.Dialector.Name() == "postgres" && db.Migrator().HasTable(&models.Product{}) {
+		if err := db.Exec(`ALTER TABLE "products" ALTER COLUMN "sub_category_id" SET NOT NULL`).Error; err != nil {
+			return err
+		}
 	}
 	if err := db.AutoMigrate(&models.ProductPriceHistory{}); err != nil {
 		return err
 	}
 	return backfillInventoryOpeningMovements(db)
+}
+
+// Every product must have a subcategory. Existing products without one are
+// assigned the reserved "None" subcategory within their own category.
+func ensureProductSubcategories(db *gorm.DB) error {
+	if !db.Migrator().HasTable(&models.Product{}) || !db.Migrator().HasTable(&models.SubCategory{}) {
+		return nil
+	}
+	if err := db.Exec(`
+		INSERT INTO sub_categories (category_id, name)
+		SELECT DISTINCT p.category_id, 'None'
+		FROM products p
+		WHERE p.sub_category_id IS NULL
+		ON CONFLICT (category_id, name) DO NOTHING
+	`).Error; err != nil {
+		return err
+	}
+	return db.Exec(`
+		UPDATE products p
+		SET sub_category_id = sc.id
+		FROM sub_categories sc
+		WHERE p.sub_category_id IS NULL
+		  AND sc.category_id = p.category_id
+		  AND sc.name = 'None'
+	`).Error
 }
 
 func backfillInventoryOpeningMovements(db *gorm.DB) error {

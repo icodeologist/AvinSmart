@@ -159,7 +159,7 @@ func validateUpdate(payload *updateRequest) api.Fields {
 		fields.Add("phone", "phone is required")
 	}
 	if !validRoles[payload.Role] {
-		fields.Add("role", "role must be one of: manager, sales, inventory, inventory_staff, support")
+		fields.Add("role", "role must be one of: sales, inventory_staff")
 	}
 	if payload.Status != "active" && payload.Status != "inactive" {
 		fields.Add("status", "status must be active or inactive")

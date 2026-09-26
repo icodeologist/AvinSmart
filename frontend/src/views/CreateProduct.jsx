@@ -2,8 +2,10 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import PageHeader from "../components/layout/PageHeader.jsx";
 import { createProduct } from "../api/productsApi.js";
+import { fetchProducts } from "../api/productsApi.js";
 import { fetchCategories } from "../api/categoriesApi.js";
 import { fetchOutlets } from "../api/outletsApi.js";
+import { getPosToken } from "../api/config.js";
 
 function readFileAsDataURI(file) {
   return new Promise((resolve, reject) => {
@@ -26,12 +28,21 @@ export default function CreateProduct() {
   const [category, setCategory] = useState("");
   const [categories, setCategories] = useState([]);
   const [subCategories, setSubCategories] = useState([]);
-  const [subCategory, setSubCategory] = useState("");
+  const [subCategory, setSubCategory] = useState("None");
   const [alert, setAlert] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [outlet, setOutlet] = useState(null);
   const [outletLoading, setOutletLoading] = useState(true);
   const [outletError, setOutletError] = useState("");
+  const [recentProducts, setRecentProducts] = useState([]);
+  const [recentLoading, setRecentLoading] = useState(true);
+  const [recentError, setRecentError] = useState("");
+
+  useEffect(() => {
+    if (!alert) return undefined;
+    const timer = window.setTimeout(() => setAlert(null), 5000);
+    return () => window.clearTimeout(timer);
+  }, [alert]);
 
   useEffect(() => {
     let cancelled = false;
@@ -70,12 +81,24 @@ export default function CreateProduct() {
     return () => { cancelled = true; };
   }, [numericOutletId]);
 
+  useEffect(() => {
+    if (!Number.isInteger(numericOutletId) || numericOutletId <= 0) return undefined;
+    let cancelled = false;
+    setRecentLoading(true);
+    setRecentError("");
+    fetchProducts("", numericOutletId, getPosToken() ? "pos" : "admin")
+      .then((data) => { if (!cancelled) setRecentProducts(data.slice(0, 5)); })
+      .catch((loadError) => { if (!cancelled) setRecentError(loadError.message); })
+      .finally(() => { if (!cancelled) setRecentLoading(false); });
+    return () => { cancelled = true; };
+  }, [numericOutletId]);
+
   function handleCategoryChange(event) {
     const value = event.target.value;
     setCategory(value);
     const selectedCategory = categories.find((item) => item.name === value);
     setSubCategories(selectedCategory ? selectedCategory.subCategories : []);
-    setSubCategory("");
+    setSubCategory("None");
   }
 
   async function handleSubmit(event) {
@@ -97,13 +120,12 @@ export default function CreateProduct() {
     setAlert(null);
 
     try {
-      await createProduct({
+      const productPayload = {
         outlet_id: outlet.id,
         title: form.productName.value,
         sku_id: form.productSKU.value,
         quantity: Number(form.productStock.value),
         category_name: category,
-        sub_category_name: subCategory,
         description: form.productDescription.value,
         unit: form.productUnit.value,
         retail_price: form.productPrice.value,
@@ -111,14 +133,25 @@ export default function CreateProduct() {
         bought_price: form.productBoughtPrice.value || "0.00",
         whole_sale_price: form.productWholeSalePrice.value || "0.00",
         image_base64: await readFileAsDataURI(imageInput.files[0]),
-      });
+      };
+      productPayload.sub_category_name = subCategory.trim() || "None";
+      const createdProduct = await createProduct(productPayload);
+      const createdProductRow = {
+        ...createdProduct,
+        category: { name: category },
+        sub_category: { name: subCategory.trim() || "None" },
+      };
+      setRecentProducts((current) => [createdProductRow, ...current.filter((product) => product.id !== createdProduct.id)].slice(0, 5));
+      fetchProducts("", numericOutletId, getPosToken() ? "pos" : "admin")
+        .then((data) => setRecentProducts([createdProductRow, ...data.filter((product) => product.id !== createdProduct.id)].slice(0, 5)))
+        .catch(() => {});
 
       setAlert({ type: "success", message: "Product created successfully." });
       form.reset();
       setValidated(false);
       setCategory("");
       setSubCategories([]);
-      setSubCategory("");
+      setSubCategory("None");
     } catch (error) {
       setAlert({ type: "danger", message: error.message });
     } finally {
@@ -154,6 +187,19 @@ export default function CreateProduct() {
 
   return (
     <>
+      {alert ? (
+        <div className="position-fixed top-0 end-0 p-3" style={{ zIndex: 1080 }}>
+          <div className={`toast show border-0 shadow ${alert.type === "success" ? "text-bg-success" : "text-bg-danger"}`} role="alert" aria-live="assertive" aria-atomic="true">
+            <div className="d-flex align-items-center">
+              <div className="toast-body d-flex align-items-center gap-2">
+                <i className={`ti ${alert.type === "success" ? "ti-circle-check" : "ti-alert-circle"}`}></i>
+                <span>{alert.message}</span>
+              </div>
+              <button type="button" className="btn-close btn-close-white me-2" aria-label="Close notification" onClick={() => setAlert(null)}></button>
+            </div>
+          </div>
+        </div>
+      ) : null}
       <PageHeader title={`Add Product to ${outlet.name}`} subtitle="This product will belong to the selected outlet">
         <Link to={`/outlets/${outlet.id}`} className="btn btn-sm btn-outline-secondary">
           <i className="ti ti-arrow-left"></i> Back to Outlet
@@ -165,9 +211,6 @@ export default function CreateProduct() {
           <div className="card">
             <div className="card-body p-4">
               <form id="addProductForm" ref={formRef} noValidate className={validated ? "was-validated" : ""} onSubmit={handleSubmit}>
-                {alert ? (
-                  <div id="productAlert" className={`alert alert-${alert.type}`} role="alert">{alert.message}</div>
-                ) : null}
                 <div className="row">
                   <div className="col-md-6 mb-3">
                     <label htmlFor="productName" className="form-label">Product Name</label>
@@ -225,7 +268,7 @@ export default function CreateProduct() {
                 <div className="mb-3">
                   <label htmlFor="productSubCategory" className="form-label">Subcategory</label>
                   <select className="form-select" id="productSubCategory" name="productSubCategory" required value={subCategory} onChange={(event) => setSubCategory(event.target.value)}>
-                    <option value="">Select subcategory</option>
+                    <option value="None">None</option>
                     {subCategories.map((sub) => (
                       <option value={sub.name} key={sub.id || sub.name}>{sub.name}</option>
                     ))}
@@ -245,6 +288,33 @@ export default function CreateProduct() {
               </form>
             </div>
           </div>
+        </div>
+      </div>
+
+      <div className="card mt-3">
+        <div className="card-header bg-white px-4 py-3">
+          <h2 className="h5 mb-1">Recently Added Products</h2>
+          <p className="text-muted small mb-0">The five latest products added to {outlet.name}.</p>
+        </div>
+        <div className="table-responsive">
+          <table className="table table-hover align-middle mb-0">
+            <thead className="table-light">
+              <tr><th className="ps-4">ID</th><th>Title</th><th>SKU</th><th>Category</th><th>Subcategory</th></tr>
+            </thead>
+            <tbody>
+              {recentLoading ? <tr><td colSpan="5" className="text-center py-4 text-muted">Loading recent products...</td></tr>
+                : recentError ? <tr><td colSpan="5" className="text-center py-4 text-danger">{recentError}</td></tr>
+                  : recentProducts.length ? recentProducts.map((product) => (
+                    <tr key={product.id || product.sku_id}>
+                      <td className="ps-4">{product.id || "-"}</td>
+                      <td className="fw-semibold">{product.title}</td>
+                      <td>{product.sku_id}</td>
+                      <td>{product.category?.name || "-"}</td>
+                      <td>{product.sub_category?.name || "None"}</td>
+                    </tr>
+                  )) : <tr><td colSpan="5" className="text-center py-4 text-muted">No products have been added yet.</td></tr>}
+            </tbody>
+          </table>
         </div>
       </div>
     </>

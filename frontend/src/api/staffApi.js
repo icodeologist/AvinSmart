@@ -11,6 +11,7 @@ function normalize(member) {
     name: member.name || "Unknown",
     email: member.email || "",
     phone: member.phone || "",
+    photo: member.photo || "",
     role: member.role || "staff",
     status: member.status || "active",
     outlets: Array.isArray(member.outlets) ? member.outlets.map((outlet) => ({ id: outlet.id, name: outlet.name })) : [],
@@ -64,6 +65,7 @@ export async function createStaff(staff) {
     email: String(staff.email || "").trim(),
     password: String(staff.password || ""),
     phone: String(staff.phone || "").trim(),
+    photo_base64: staff.photoBase64 || "",
     role: staff.role || "staff",
     outlet_ids: Array.isArray(staff.outletIds) ? staff.outletIds.map(Number) : [],
   };

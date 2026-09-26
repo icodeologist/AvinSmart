@@ -27,13 +27,16 @@ export default function Sidebar({ collapsed, mobileOpen }) {
   const navigate = useNavigate();
   const className = `sidebar${collapsed ? " collapsed" : ""}${mobileOpen ? " mobile-show" : ""}`;
   let inventoryStaff = false;
+  let salesStaff = false;
   try {
     const staff = JSON.parse(sessionStorage.getItem("avinSmartPosStaff") || "null");
     inventoryStaff = Boolean(staff?.role === "inventory_staff");
+    salesStaff = Boolean(staff?.role === "sales");
   } catch {
     inventoryStaff = false;
   }
-  const visibleLinks = inventoryStaff ? mainLinks.filter((link) => link.to === "/inventory") : mainLinks;
+  const visibleLinks = inventoryStaff ? [...mainLinks.filter((link) => ["/inventory", "/price-updates"].includes(link.to)), { to: "/pos", icon: "ti ti-device-desktop", label: "Staff POS" }] : salesStaff ? [] : mainLinks;
+  const visibleAccountLinks = inventoryStaff || salesStaff ? accountLinks.filter((link) => link.to === "/profile") : accountLinks;
 
   function logout() {
     localStorage.removeItem(ADMIN_SESSION_KEY);
@@ -60,7 +63,7 @@ export default function Sidebar({ collapsed, mobileOpen }) {
         ))}
 
         <li className="px-4 pt-4 pb-2"><small className="nav-text">Account</small></li>
-        {accountLinks.map((link) => (
+        {visibleAccountLinks.map((link) => (
           <li key={link.to}>
             <NavLink className={({ isActive }) => navLinkClass(isActive)} to={link.to}>
               <i className={link.icon}></i><span className="nav-text">{link.label}</span>

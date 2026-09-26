@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Navigate, useNavigate } from "react-router-dom";
+import { Link, Navigate, useNavigate } from "react-router-dom";
 import { fetchProducts, productImagePath } from "../api/productsApi.js";
 import { cancelOrder, createOrder, quoteOrder, recordPayment } from "../api/ordersApi.js";
 import { POS_SESSION_KEY } from "../api/config.js";
@@ -36,6 +36,7 @@ function PosHeader({ staff, outletId, onOutlet, onLogout }) {
           <strong>{staff.name}</strong>
           <small>{staff.role || "Staff"} counter</small>
         </span>
+        <Link to="/profile" className="btn btn-sm btn-outline-primary">Profile</Link>
         <button type="button" className="btn btn-sm btn-outline-secondary" onClick={onLogout}>
           Logout
         </button>
@@ -456,7 +457,9 @@ export default function PosPage() {
   function logout() {
     sessionStorage.removeItem("avinSmartPosStaff");
     localStorage.removeItem(POS_SESSION_KEY);
-    navigate("/staff/sales/login");
+    localStorage.removeItem("avinSmartAdminToken");
+    localStorage.removeItem("admin");
+    navigate("/", { replace: true });
   }
 
   if (!staff) return <Navigate to="/staff/sales/login" replace />;

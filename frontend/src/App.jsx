@@ -30,10 +30,10 @@ function Landing() {
 
 function RequireAdmin() {
   if (getAdminToken()) return <Outlet />;
-  if (getPosToken() && window.location.pathname === "/inventory") {
+  if (getPosToken()) {
     try {
       const staff = JSON.parse(sessionStorage.getItem("avinSmartPosStaff") || "null");
-      if (staff?.role === "inventory_staff") return <Outlet />;
+      if (["sales", "inventory_staff"].includes(staff?.role) && ["/inventory", "/price-updates", "/profile"].includes(window.location.pathname)) return <Outlet />;
     } catch {
       // Invalid session data falls through to the login page.
     }

@@ -3,13 +3,14 @@ package staff
 import "testing"
 
 func TestRegisterValidationRequiresOutletForOperationalStaff(t *testing.T) {
-	for _, role := range []string{"manager", "sales", "inventory", "inventory_staff"} {
+	for _, role := range []string{"sales", "inventory_staff"} {
 		payload := registerRequest{
-			Name:     "Counter user",
-			Email:    "counter@example.com",
-			Password: "password123",
-			Phone:    "1234567890",
-			Role:     role,
+			Name:        "Counter user",
+			Email:       "counter@example.com",
+			Password:    "password123",
+			Phone:       "1234567890",
+			Role:        role,
+			PhotoBase64: "data:image/png;base64,ZmFrZQ==",
 		}
 		fields := payload.validate()
 		if !fields.HasErrors() {
@@ -21,15 +22,16 @@ func TestRegisterValidationRequiresOutletForOperationalStaff(t *testing.T) {
 	}
 }
 
-func TestRegisterValidationAllowsSupportWithoutOutlet(t *testing.T) {
+func TestRegisterValidationRejectsRemovedRole(t *testing.T) {
 	payload := registerRequest{
-		Name:     "Support user",
-		Email:    "support@example.com",
-		Password: "password123",
-		Phone:    "1234567890",
-		Role:     "support",
+		Name:        "Support user",
+		Email:       "support@example.com",
+		Password:    "password123",
+		Phone:       "1234567890",
+		Role:        "support",
+		PhotoBase64: "data:image/png;base64,ZmFrZQ==",
 	}
-	if fields := payload.validate(); fields.HasErrors() {
-		t.Fatalf("support user without an outlet should be valid: %v", fields)
+	if fields := payload.validate(); !fields.HasErrors() {
+		t.Fatal("removed support role should be rejected")
 	}
 }

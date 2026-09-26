@@ -14,7 +14,7 @@ import (
 func SalaryRoutes(db *gorm.DB, cfg config.Config) http.Handler {
 	r := chi.NewRouter()
 	r.Use(middleware.RequireAuth(cfg))
-	r.Use(middleware.RequireRoles("admin", "manager"))
+	r.Use(middleware.RequireRoles("admin"))
 	r.Get("/", salaries.List(db))
 	r.With(middleware.Idempotent(db)).Post("/", salaries.Create(db))
 	r.With(middleware.Idempotent(db)).Patch("/{id}", salaries.Update(db))

@@ -11,6 +11,16 @@ export default function StaffRegistrationForm() {
   const [outlets, setOutlets] = useState([]);
   const [outletError, setOutletError] = useState("");
 
+  function readPhoto(file) {
+    return new Promise((resolve, reject) => {
+      if (!file) return reject(new Error("A profile photo is required."));
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(new Error("Could not read the profile photo."));
+      reader.readAsDataURL(file);
+    });
+  }
+
   useEffect(() => {
     fetchOutlets().then(setOutlets).catch((loadError) => setOutletError(loadError.message));
   }, []);
@@ -32,6 +42,7 @@ export default function StaffRegistrationForm() {
     setError("");
     setFieldErrors({});
     try {
+      staff.photoBase64 = await readPhoto(form.staffPhoto.files[0]);
       const member = await createStaff(staff);
       navigate("/staff", { state: { staff: member } });
     } catch (submissionError) {
@@ -69,14 +80,17 @@ export default function StaffRegistrationForm() {
               {fieldErrors.phone ? <div className="invalid-feedback d-block">{fieldErrors.phone}</div> : null}
             </div>
             <div className="col-md-6">
+              <label htmlFor="staffPhoto" className="form-label">Profile photo</label>
+              <input type="file" className="form-control" id="staffPhoto" accept="image/jpeg,image/png,image/webp,image/gif" required />
+              <small className="text-muted">Upload a clear JPG, PNG, WEBP, or GIF image up to 10 MB.</small>
+              {fieldErrors.photo ? <div className="invalid-feedback d-block">{fieldErrors.photo}</div> : null}
+            </div>
+            <div className="col-md-6">
               <label htmlFor="staffRole" className="form-label">Role</label>
               <select className="form-select" id="staffRole" required>
                 <option value="">Select role</option>
-                <option value="manager">Manager</option>
                 <option value="sales">Sales</option>
-                <option value="inventory">Inventory</option>
                 <option value="inventory_staff">Inventory Staff</option>
-                <option value="support">Support</option>
               </select>
               {fieldErrors.role ? <div className="invalid-feedback d-block">{fieldErrors.role}</div> : null}
             </div>
@@ -87,10 +101,10 @@ export default function StaffRegistrationForm() {
             </div>
             <div className="col-md-6">
               <label htmlFor="staffOutlets" className="form-label">Assigned outlets</label>
-              <select className="form-select" id="staffOutlets" name="staffOutlets" multiple size="4">
+              <select className="form-select" id="staffOutlets" name="staffOutlets" multiple size="4" required>
                 {outlets.map((outlet) => <option value={outlet.id} key={outlet.id}>{outlet.name}</option>)}
               </select>
-              <small className="text-muted">Select every branch this staff member may operate.</small>
+              <small className="text-muted">Select at least one branch this staff member may operate.</small>
               {outletError ? <div className="invalid-feedback d-block">{outletError}</div> : null}
               {fieldErrors.outlet_ids ? <div className="invalid-feedback d-block">{fieldErrors.outlet_ids}</div> : null}
             </div>
