@@ -8,3 +8,12 @@ export async function fetchDashboardSummary() {
   if (!response.ok) throw new Error(data.error || "Could not fetch dashboard summary");
   return data;
 }
+
+export async function fetchTotalInvested() {
+  const response = await fetch(`${API_BASE_URL}/dashboard/total-invested`, {
+    headers: { Authorization: `Bearer ${getAdminToken()}` },
+  });
+  const data = unwrap(await response.json().catch(() => ({})));
+  if (!response.ok) throw new Error(data.error || "Could not fetch total invested");
+  return data;
+}

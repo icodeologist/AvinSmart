@@ -3,7 +3,7 @@ import ApexCharts from "apexcharts";
 import PageHeader from "../components/layout/PageHeader.jsx";
 import { fetchProducts } from "../api/productsApi.js";
 import { salesPurchaseOptions } from "../charts/charts.js";
-import { fetchDashboardSummary } from "../api/dashboardApi.js";
+import { fetchDashboardSummary, fetchTotalInvested } from "../api/dashboardApi.js";
 
 const LOW_STOCK_THRESHOLD = 10;
 const DAIRY_STOCK_PRODUCTS = [
@@ -26,6 +26,12 @@ const FAKE_RETAIL_METRICS = [
   { title: "Gross Profit", value: "₹3,820", detail: "Profit from today's sales", color: "success", icon: "ti ti-trending-up" },
   { title: "Bills Today", value: "46", detail: "Completed customer bills", color: "info", icon: "ti ti-receipt" },
   { title: "Pending Collection", value: "₹1,260", detail: "Open order balance", color: "warning", icon: "ti ti-clock-dollar" },
+];
+const FAKE_RETAIL_INSIGHTS = [
+  { title: "Capital in Stock", value: "₹1,24,800", detail: "What is invested in current stock", color: "primary", icon: "ti ti-wallet" },
+  { title: "Shelf Retail Value", value: "₹1,67,500", detail: "Revenue if current stock sells", color: "info", icon: "ti ti-building-store" },
+  { title: "Potential Stock Margin", value: "₹42,700", detail: "Expected margin from current stock", color: "success", icon: "ti ti-chart-line" },
+  { title: "Average Bill Today", value: "₹401", detail: "Average value per completed bill", color: "warning", icon: "ti ti-shopping-cart" },
 ];
 
 function formatMoney(value) {
@@ -55,19 +61,70 @@ function useChart(targetRef, options) {
   }, [targetRef, options]);
 }
 
-function StatCard({ title, value, detail, color, icon }) {
+function SectionLabel({ eyebrow, title, detail }) {
   return (
-    <div className="col-lg-3 col-12">
-      <div className={`card p-4 bg-${color} bg-opacity-10 border border-${color} border-opacity-25 rounded-2 h-100`}>
-        <div className="d-flex gap-3">
-          <div className={`icon-shape icon-md bg-${color} text-white rounded-2`}><i className={`${icon} fs-4`}></i></div>
-          <div>
-            <h2 className="mb-2 fs-6">{title}</h2>
-            <h3 className="fw-bold mb-0">{value}</h3>
-            <p className="text-muted mb-0 small">{detail}</p>
-          </div>
-        </div>
+    <div className="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-1 px-1" style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
+      <div>
+        <p className="text-muted mb-0" style={{ fontSize: "0.67rem", fontWeight: 600 }}>{eyebrow}</p>
+        <h2 className="mb-0" style={{ color: "#1d1d1f", fontSize: "0.95rem", fontWeight: 700, letterSpacing: "-0.01em" }}>{title}</h2>
       </div>
+      <small style={{ color: "#86868b", fontSize: "0.7rem" }}>{detail}</small>
+    </div>
+  );
+}
+
+const IOS_TONES = {
+  primary: { background: "#0a84ff", shadow: "rgba(10, 132, 255, 0.22)" },
+  success: { background: "#30b65a", shadow: "rgba(48, 182, 90, 0.22)" },
+  warning: { background: "#ff9f0a", shadow: "rgba(255, 159, 10, 0.22)" },
+  danger: { background: "#ff453a", shadow: "rgba(255, 69, 58, 0.22)" },
+  info: { background: "#5e5ce6", shadow: "rgba(94, 92, 230, 0.22)" },
+};
+
+function IOSIcon({ color, icon }) {
+  const tone = IOS_TONES[color] || IOS_TONES.primary;
+  return <span className="d-inline-flex align-items-center justify-content-center rounded-3 text-white flex-shrink-0" style={{ width: 34, height: 34, background: tone.background, boxShadow: `0 4px 10px ${tone.shadow}` }}><i className={icon} style={{ fontSize: "1.05rem", lineHeight: 1 }}></i></span>;
+}
+
+function SnapshotCard({ title, value, detail, color, icon }) {
+  return (
+    <div className="col-md-6 col-xl-3">
+      <article className="card h-100 border rounded-4" style={{ borderColor: "#e5e5ea", boxShadow: "0 1px 2px rgba(0, 0, 0, 0.035)", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
+        <div className="card-body p-3">
+          <div className="d-flex justify-content-between align-items-center gap-2 mb-2"><p className="mb-0" style={{ color: "#6e6e73", fontSize: "0.74rem", fontWeight: 600 }}>{title}</p><IOSIcon color={color} icon={icon} /></div>
+          <h3 className="mb-1" style={{ color: "#1d1d1f", fontSize: "1.45rem", fontWeight: 700, letterSpacing: "-0.04em", lineHeight: 1.05 }}>{value}</h3>
+          <p className="mb-0" style={{ color: "#86868b", fontSize: "0.67rem" }}>{detail}</p>
+        </div>
+      </article>
+    </div>
+  );
+}
+
+function TradeCard({ title, value, detail, color, icon, live }) {
+  return (
+    <div className="col-md-6 col-xl-3">
+      <article className="card h-100 border rounded-4" style={{ borderColor: "#e5e5ea", boxShadow: "0 1px 2px rgba(0, 0, 0, 0.035)", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
+        <div className="card-body p-3">
+          <div className="d-flex justify-content-between align-items-center gap-2 mb-2"><span className="rounded-pill px-2 py-1" style={{ background: "#f2f2f7", color: "#6e6e73", fontSize: "0.57rem", fontWeight: 700, letterSpacing: "0.04em" }}><span className="d-inline-block rounded-circle me-1" style={{ width: 5, height: 5, background: IOS_TONES[color]?.background, verticalAlign: "1px" }}></span>{live ? "LIVE TODAY" : "DEMO TODAY"}</span><IOSIcon color={color} icon={icon} /></div>
+          <p className="mb-1" style={{ color: "#6e6e73", fontSize: "0.74rem", fontWeight: 600 }}>{title}</p>
+          <h3 className="mb-1" style={{ color: "#1d1d1f", fontSize: "1.38rem", fontWeight: 700, letterSpacing: "-0.04em", lineHeight: 1.05 }}>{value}</h3>
+          <p className="mb-0" style={{ color: "#86868b", fontSize: "0.67rem" }}>{detail}</p>
+        </div>
+      </article>
+    </div>
+  );
+}
+
+function InsightCard({ title, value, detail, color, icon }) {
+  return (
+    <div className="col-md-6 col-xl-3">
+      <article className="card h-100 border rounded-4" style={{ borderColor: "#e5e5ea", boxShadow: "0 1px 2px rgba(0, 0, 0, 0.035)", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
+        <div className="card-body p-3">
+          <div className="d-flex justify-content-between align-items-center gap-2 mb-2"><p className="mb-0" style={{ color: "#6e6e73", fontSize: "0.74rem", fontWeight: 600 }}>{title}</p><IOSIcon color={color} icon={icon} /></div>
+          <h3 className="mb-1" style={{ color: "#1d1d1f", fontSize: "1.38rem", fontWeight: 700, letterSpacing: "-0.04em", lineHeight: 1.05 }}>{value}</h3>
+          <p className="mb-0" style={{ color: "#86868b", fontSize: "0.67rem" }}>{detail}</p>
+        </div>
+      </article>
     </div>
   );
 }
@@ -170,6 +227,7 @@ export function DashboardWorkspace({ live = false, fullScreen = false, onShowDem
   const salesChartRef = useRef(null);
   const [liveProducts, setLiveProducts] = useState([]);
   const [summary, setSummary] = useState(null);
+  const [invested, setInvested] = useState(null);
   const [loading, setLoading] = useState(live);
   const [error, setError] = useState("");
 
@@ -177,11 +235,12 @@ export function DashboardWorkspace({ live = false, fullScreen = false, onShowDem
     if (!live) return undefined;
     let cancelled = false;
     const loadProducts = () => {
-      Promise.all([fetchProducts(), fetchDashboardSummary()])
-        .then(([productData, summaryData]) => {
+      Promise.all([fetchProducts(), fetchDashboardSummary(), fetchTotalInvested()])
+        .then(([productData, summaryData, investedData]) => {
           if (cancelled) return;
           setLiveProducts(productData);
           setSummary(summaryData);
+          setInvested(investedData);
         })
         .catch((loadError) => { if (!cancelled) setError(loadError.message); })
         .finally(() => { if (!cancelled) setLoading(false); });
@@ -208,6 +267,8 @@ export function DashboardWorkspace({ live = false, fullScreen = false, onShowDem
     outOfStock: products.filter((product) => Number(product.quantity) <= 0).length,
   }), [products]);
   const stats = live ? liveStats : FAKE_STATS;
+  const totalInvested = live ? invested ? formatMoney(invested.total_invested) : "—" : "₹1,24,800";
+  const totalInvestedDetail = live && !invested ? "Loading current stock cost" : "Cost of current stock";
   const dairyProducts = live
     ? products.filter((product) => String(product.category?.name || "").trim().toLowerCase() === "dairy")
     : DAIRY_STOCK_PRODUCTS;
@@ -224,6 +285,14 @@ export function DashboardWorkspace({ live = false, fullScreen = false, onShowDem
       { title: "Pending Collection", value: "—", detail: "Loading open orders", color: "warning", icon: "ti ti-clock-dollar" },
     ]
     : FAKE_RETAIL_METRICS;
+  const retailInsights = live
+    ? summary ? [
+      { title: "Capital in Stock", value: formatMoney(summary.inventory_cost), detail: "What is invested in current stock", color: "primary", icon: "ti ti-wallet" },
+      { title: "Shelf Retail Value", value: formatMoney(summary.shelf_retail_value), detail: "Revenue if current stock sells", color: "info", icon: "ti ti-building-store" },
+      { title: "Potential Stock Margin", value: formatMoney(summary.expected_margin), detail: "Expected margin from current stock", color: "success", icon: "ti ti-chart-line" },
+      { title: "Average Bill Today", value: formatMoney(summary.average_bill), detail: "Average value per completed bill", color: "warning", icon: "ti ti-shopping-cart" },
+    ] : FAKE_RETAIL_INSIGHTS.map((insight) => ({ ...insight, value: "—", detail: "Loading live retail insight" }))
+    : FAKE_RETAIL_INSIGHTS;
 
   const chartOptions = useMemo(() => salesPurchaseOptions(), []);
   useChart(salesChartRef, chartOptions);
@@ -234,14 +303,21 @@ export function DashboardWorkspace({ live = false, fullScreen = false, onShowDem
       </PageHeader>}
 
       <div className="row g-3 mb-3">
-        <StatCard title="Products" value={stats.products} detail="From your inventory" color="primary" icon="ti ti-box-seam" />
-        <StatCard title="Units in stock" value={stats.units} detail="Across all products" color="success" icon="ti ti-packages" />
-        <StatCard title="Low stock" value={stats.lowStock} detail={`At or below ${LOW_STOCK_THRESHOLD} units`} color="warning" icon="ti ti-alert-triangle" />
-        <StatCard title="Out of stock" value={stats.outOfStock} detail="Products needing stock" color="danger" icon="ti ti-package-off" />
+        <div className="col-12"><SectionLabel eyebrow="Store snapshot" title="Inventory at a glance" detail={live ? "Refreshing every 30 seconds" : "Static demo figures"} /></div>
+        <SnapshotCard title="Total invested" value={totalInvested} detail={totalInvestedDetail} color="primary" icon="ti ti-wallet" />
+        <SnapshotCard title="Units in stock" value={stats.units} detail="Across all products" color="success" icon="ti ti-packages" />
+        <SnapshotCard title="Low stock" value={stats.lowStock} detail={`At or below ${LOW_STOCK_THRESHOLD} units`} color="warning" icon="ti ti-alert-triangle" />
+        <SnapshotCard title="Out of stock" value={stats.outOfStock} detail="Products needing stock" color="danger" icon="ti ti-package-off" />
       </div>
 
       <div className="row g-3 mb-3">
-        {retailMetrics.map((metric) => <StatCard key={metric.title} {...metric} />)}
+        <div className="col-12"><SectionLabel eyebrow="Today's trade" title="Sales and collection" detail={live ? "From completed POS orders" : "Demo retail performance"} /></div>
+        {retailMetrics.map((metric) => <TradeCard key={metric.title} {...metric} live={live} />)}
+      </div>
+
+      <div className="row g-3 mb-3">
+        <div className="col-12"><SectionLabel eyebrow="Inventory intelligence" title="Value sitting on your shelves" detail={live ? "Calculated from live stock pricing" : "Demo stock valuation"} /></div>
+        {retailInsights.map((insight) => <InsightCard key={insight.title} {...insight} />)}
       </div>
 
       <div className="row g-3 mb-3">
