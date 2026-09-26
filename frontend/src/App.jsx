@@ -22,6 +22,7 @@ import PosPage from "./views/PosPage.jsx";
 import Notifications from "./views/Notifications.jsx";
 import Welcome from "./views/Welcome.jsx";
 import PriceUpdates from "./views/PriceUpdates.jsx";
+import LiveDashboard from "./views/LiveDashboard.jsx";
 import { getAdminToken, getPosToken } from "./api/config.js";
 
 function Landing() {
@@ -47,6 +48,7 @@ export default function App() {
       <Route path="/" element={<Landing />} />
       <Route path="/login" element={<Landing />} />
       <Route element={<RequireAdmin />}>
+        <Route path="/profile/live-dashboard" element={<LiveDashboard />} />
         <Route element={<AppLayout />}>
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/inventory" element={<Inventory />} />

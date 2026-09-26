@@ -83,6 +83,7 @@ export default function AdminProfile() {
             <div className="col-md-6"><small className="text-muted d-block">Role</small><strong>{role}</strong></div>
             <div className="col-md-6"><small className="text-muted d-block">Joined on</small><strong>{joined}</strong></div>
           </div>
+          {account?.accountType === "admin" ? <div className="border-top mt-4 pt-3"><Link to="/profile/live-dashboard" className="small text-secondary text-decoration-underline">Open workspace</Link></div> : null}
         </div>
       </div>
     </>
