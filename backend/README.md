@@ -84,8 +84,6 @@ Salary endpoints:
 - `GET /api/v1/salaries/audit?entity=salary&entity_id=1`
 - `GET /api/v1/salaries/calendar?pay_period=YYYY-MM`
 - `PUT /api/v1/salaries/calendar`
-- `POST /api/v1/salaries/calendar/holidays`
-- `DELETE /api/v1/salaries/calendar/holidays/{id}`
 - `GET /api/v1/salaries/attendance?staff_id=1&month=YYYY-MM`
 - `PUT /api/v1/salaries/attendance`
 - `GET /api/v1/salaries/leave-requests?staff_id=1&month=YYYY-MM`
@@ -113,8 +111,7 @@ member/date. Paid salary records are immutable.
 
 Attendance and payroll dates use UTC `YYYY-MM-DD` values. Payroll uses fixed
 monthly salary prorated by present days plus approved paid leave over the
-configured working-day count. Public holidays are persisted in the payroll
-calendar and reduce that count; weekends are excluded from the default count.
+configured working-day count; weekends are excluded from the default count.
 Payroll audit history is available to administrators through the audit endpoint.
 
 Attendance example:

@@ -73,7 +73,6 @@ func AutoMigrate(db *gorm.DB) error {
 		&models.Attendance{},
 		&models.LeaveRequest{},
 		&models.PayrollCalendar{},
-		&models.PublicHoliday{},
 		&models.PayrollAudit{},
 		&models.Bill{},
 		&models.BillItem{},

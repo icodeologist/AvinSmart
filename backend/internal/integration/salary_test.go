@@ -100,7 +100,7 @@ type salaryFixture struct {
 func newSalaryFixture(t *testing.T, db *gorm.DB) salaryFixture {
 	t.Helper()
 	base := newFixture(t, db)
-	if err := db.Exec("TRUNCATE TABLE payroll_audits, public_holidays, payroll_calendars, leave_requests, attendance, salaries RESTART IDENTITY CASCADE").Error; err != nil {
+	if err := db.Exec("TRUNCATE TABLE payroll_audits, payroll_calendars, leave_requests, attendance, salaries RESTART IDENTITY CASCADE").Error; err != nil {
 		t.Fatalf("reset salary tables: %v", err)
 	}
 	var member models.Staff

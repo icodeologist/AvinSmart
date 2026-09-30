@@ -1,6 +1,8 @@
 const configuredApiBaseUrl = (import.meta.env.VITE_API_BASE_URL || "").trim();
 
-export const API_BASE_URL = (configuredApiBaseUrl || (import.meta.env.DEV ? "http://localhost:8080/api/v1" : "/api/v1")).replace(/\/+$/, "");
+// Vite proxies this path to the local API during development, avoiding browser
+// CORS preflights for authenticated mutations such as payroll updates.
+export const API_BASE_URL = (configuredApiBaseUrl || "/api/v1").replace(/\/+$/, "");
 export const ADMIN_SESSION_KEY = "avinSmartAdminToken";
 export const POS_SESSION_KEY = "avinSmartPosToken";
 

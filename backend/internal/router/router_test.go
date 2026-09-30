@@ -23,6 +23,9 @@ func TestCORSUsesConfiguredOrigins(t *testing.T) {
 	if allowedResponse.Header().Get("Access-Control-Allow-Headers") == "" {
 		t.Fatal("CORS preflight did not advertise allowed headers")
 	}
+	if allowedResponse.Header().Get("Access-Control-Allow-Methods") != "GET, POST, PUT, PATCH, DELETE, OPTIONS" {
+		t.Fatalf("CORS preflight does not allow salary PUT requests: %q", allowedResponse.Header().Get("Access-Control-Allow-Methods"))
+	}
 
 	blocked := httptest.NewRequest(http.MethodOptions, "/api/v1/orders", nil)
 	blocked.Header.Set("Origin", "https://untrusted.example.com")

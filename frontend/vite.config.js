@@ -8,7 +8,8 @@ import react from '@vitejs/plugin-react'
 // so the dev server behaves like the built app.
 const spaCleanRoutes = new Set([
   '/', '/inventory', '/products/create', '/categories/add', '/outlets', '/outlets/categories/add',
-  '/reports', '/docs', '/login', '/signup', '/signin', '/404',
+  '/dashboard', '/price-updates', '/cash-flow', '/profile', '/profile/live-dashboard',
+  '/notifications', '/bills/create', '/reports', '/docs', '/login', '/signin', '/404',
 ])
 
 const isSpaCleanRoute = (path) => {
@@ -46,10 +47,16 @@ export default defineConfig({
    root: resolve(__dirname, 'src'),   // ✅ keeps dev server working
    server: {
     host: true,
-    port: 3000,
-    strictPort: true,
-    hot: true,
-    open: true,
+   port: 3000,
+   strictPort: true,
+   hot: true,
+   open: true,
+    proxy: {
+      '/api/v1': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+      },
+    },
   },
   css: {
     preprocessorOptions: {

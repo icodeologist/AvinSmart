@@ -34,6 +34,7 @@ export function fetchStaffForPayroll() { return request("/staff"); }
 export function fetchAttendance(staffId, month) { return request(`/salaries/attendance?staff_id=${staffId}&month=${encodeURIComponent(month)}`); }
 export function fetchLeaveRequests(staffId, month) { return request(`/salaries/leave-requests?staff_id=${staffId}&month=${encodeURIComponent(month)}`); }
 export function saveAttendance({ staffId, date, status }) { return request("/salaries/attendance", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ staff_id: staffId, date, status }) }); }
+export function saveDailyAttendance({ date, entries }) { return request("/salaries/attendance/bulk", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ date, entries }) }); }
 export function createLeaveRequest({ staffId, date, reason, payPeriod }) { return request("/salaries/leave-requests", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ staff_id: staffId, date, reason, pay_period: payPeriod }) }); }
 export function updateLeaveRequest(id, status) { return request(`/salaries/leave-requests/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status }) }); }
 export function createSalary({ staffId, amount, currency, payPeriod }) { return request("/salaries", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ staff_id: Number(staffId), amount: String(amount), currency, pay_period: payPeriod }) }).then(normalize); }
@@ -42,4 +43,3 @@ export function markSalaryPaid(id, { amount, method, reference }) { return reque
 export function fetchPayrollSummary(month) { return request(`/salaries/summary?pay_period=${encodeURIComponent(month)}`); }
 export function fetchPayrollCalendar(month) { return request(`/salaries/calendar?pay_period=${encodeURIComponent(month)}`); }
 export function updatePayrollCalendar({ payPeriod, workingDays }) { return request("/salaries/calendar", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ pay_period: payPeriod, working_days: Number(workingDays) }) }); }
-export function addPublicHoliday({ payPeriod, date, name }) { return request("/salaries/calendar/holidays", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ pay_period: payPeriod, date, name }) }); }

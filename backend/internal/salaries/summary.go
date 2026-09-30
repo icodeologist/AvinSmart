@@ -28,11 +28,10 @@ type payrollSummaryEntry struct {
 }
 
 type payrollSummary struct {
-	PayPeriod      string                 `json:"pay_period"`
-	WorkingDays    int                    `json:"working_days"`
-	PublicHolidays []models.PublicHoliday `json:"public_holidays"`
-	Records        []payrollSummaryEntry  `json:"records"`
-	TotalPayable   money.Amount           `json:"total_payable"`
+	PayPeriod    string                `json:"pay_period"`
+	WorkingDays  int                   `json:"working_days"`
+	Records      []payrollSummaryEntry `json:"records"`
+	TotalPayable money.Amount          `json:"total_payable"`
 }
 
 func payableAmount(monthly money.Amount, payableDays, workingDays int) money.Amount {
@@ -66,7 +65,7 @@ func Summary(db *gorm.DB) http.HandlerFunc {
 			if err != nil {
 				return err
 			}
-			result.PayPeriod, result.WorkingDays, result.PublicHolidays = period, calendar.WorkingDays, calendar.PublicHolidays
+			result.PayPeriod, result.WorkingDays = period, calendar.WorkingDays
 
 			staffQuery, err := applyStaffScope(tx, actor, tx.Order("name asc"))
 			if err != nil {
