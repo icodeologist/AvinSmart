@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import ApexCharts from "apexcharts";
+import { useNavigate } from "react-router-dom";
 import PageHeader from "../components/layout/PageHeader.jsx";
 import { fetchProducts } from "../api/productsApi.js";
 import { salesPurchaseOptions } from "../charts/charts.js";
@@ -222,7 +223,77 @@ function LowStockMonitor({ products, loading, error }) {
   );
 }
 
+const DEMO_KPIS = [
+  { label: "Net revenue", value: "₹2,84,600", change: "+18.6%", note: "vs last month", icon: "ti ti-chart-line", tone: "#8b5cf6" },
+  { label: "Orders placed", value: "1,284", change: "+12.4%", note: "this month", icon: "ti ti-shopping-bag", tone: "#0ea5e9" },
+  { label: "Average basket", value: "₹421", change: "+8.2%", note: "per customer", icon: "ti ti-basket", tone: "#14b8a6" },
+  { label: "Repeat customers", value: "68.4%", change: "+4.9%", note: "returning buyers", icon: "ti ti-users", tone: "#f59e0b" },
+];
+
+function DemoKpi({ label, value, change, note, icon, tone }) {
+  return (
+    <div className="col-sm-6 col-xl-3">
+      <article className="h-100 rounded-4 p-3" style={{ background: "rgba(255,255,255,0.96)", border: "1px solid #e7e8f0", boxShadow: "0 8px 24px rgba(31, 35, 61, 0.06)" }}>
+        <div className="d-flex justify-content-between align-items-start mb-4"><span className="d-inline-flex align-items-center justify-content-center rounded-3 text-white" style={{ width: 38, height: 38, background: tone, boxShadow: `0 7px 14px ${tone}44` }}><i className={icon}></i></span><span className="rounded-pill px-2 py-1" style={{ color: "#159570", background: "#e9faf3", fontSize: "0.68rem", fontWeight: 700 }}>{change}</span></div>
+        <p className="mb-1" style={{ color: "#777b91", fontSize: "0.76rem", fontWeight: 600 }}>{label}</p>
+        <h2 className="mb-1" style={{ color: "#202238", fontSize: "1.55rem", fontWeight: 750, letterSpacing: "-0.04em" }}>{value}</h2>
+        <small style={{ color: "#a0a3b3" }}>{note}</small>
+      </article>
+    </div>
+  );
+}
+
+function DemoDashboard() {
+  const navigate = useNavigate();
+  const revenueRef = useRef(null);
+  const categoryRef = useRef(null);
+  const trafficRef = useRef(null);
+  const { dateTime } = useDashboardDateTime();
+  const revenueOptions = useMemo(() => ({
+    chart: { type: "area", height: 280, toolbar: { show: false }, fontFamily: "inherit" },
+    colors: ["#8b5cf6", "#c4b5fd"],
+    series: [{ name: "Revenue", data: [18, 24, 21, 31, 28, 39, 35, 44, 41, 50, 47, 58] }, { name: "Orders", data: [12, 17, 15, 22, 20, 27, 24, 31, 29, 36, 33, 42] }],
+    xaxis: { categories: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"], labels: { style: { colors: "#9699aa" } }, axisBorder: { show: false }, axisTicks: { show: false } },
+    yaxis: { labels: { style: { colors: "#9699aa" }, formatter: (value) => `₹${value}k` } },
+    dataLabels: { enabled: false }, stroke: { curve: "smooth", width: 3 }, fill: { type: "gradient", gradient: { opacityFrom: 0.25, opacityTo: 0.02 } },
+    grid: { borderColor: "#f0f0f5", strokeDashArray: 4 }, legend: { position: "top", horizontalAlign: "right", markers: { radius: 8 } }, tooltip: { theme: "light" },
+  }), []);
+  const categoryOptions = useMemo(() => ({
+    chart: { type: "donut", height: 280, fontFamily: "inherit" },
+    labels: ["Dairy", "Snacks", "Beverages", "Personal care"], colors: ["#8b5cf6", "#0ea5e9", "#14b8a6", "#f59e0b"],
+    series: [38, 27, 20, 15], dataLabels: { enabled: false }, stroke: { width: 0 },
+    legend: { position: "bottom", fontSize: "12px", markers: { radius: 8 } }, plotOptions: { pie: { donut: { size: "72%", labels: { show: true, total: { show: true, label: "Sales mix", color: "#777b91", formatter: () => "100%" } } } } },
+  }), []);
+  const trafficOptions = useMemo(() => ({
+    chart: { type: "bar", height: 250, toolbar: { show: false }, fontFamily: "inherit" },
+    colors: ["#0ea5e9"], series: [{ name: "Visitors", data: [310, 420, 390, 510, 470, 620, 584] }],
+    xaxis: { categories: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"], labels: { style: { colors: "#9699aa" } }, axisBorder: { show: false }, axisTicks: { show: false } },
+    yaxis: { labels: { style: { colors: "#9699aa" } } }, dataLabels: { enabled: false }, plotOptions: { bar: { borderRadius: 6, columnWidth: "48%" } }, grid: { borderColor: "#f0f0f5", strokeDashArray: 4 }, tooltip: { theme: "light" },
+  }), []);
+  useChart(revenueRef, revenueOptions);
+  useChart(categoryRef, categoryOptions);
+  useChart(trafficRef, trafficOptions);
+
+  return (
+    <main className="p-3 p-lg-4" style={{ background: "#f7f7fb", minHeight: "100%", fontFamily: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
+      <section className="rounded-4 p-4 p-lg-5 mb-4 text-white overflow-hidden position-relative" style={{ background: "linear-gradient(120deg, #202238 0%, #39345f 58%, #6651a9 100%)" }}>
+        <div className="position-relative" style={{ zIndex: 1 }}><h1 className="mb-2" style={{ fontSize: "clamp(1.6rem, 3vw, 2.35rem)", fontWeight: 750, letterSpacing: "-0.04em" }}>A clear view of your store.</h1><p className="mb-0" style={{ color: "#d8d4ef", maxWidth: 560 }}>A sample retail performance snapshot for presentations and planning. Figures shown here are illustrative.</p></div><i className="ti ti-chart-dots-3 position-absolute" style={{ right: "5%", bottom: "-18px", color: "rgba(255,255,255,0.1)", fontSize: "12rem" }}></i><button type="button" aria-label="Open main dashboard" title="Open main dashboard" className="position-absolute end-0 bottom-0 p-4 border-0" onClick={() => navigate("/profile/live-dashboard")} style={{ color: "#c8c3e7", background: "transparent", font: "inherit", fontSize: "0.78rem", cursor: "pointer" }}>{dateTime}</button>
+      </section>
+
+      <div className="row g-3 mb-4">{DEMO_KPIS.map((kpi) => <DemoKpi key={kpi.label} {...kpi} />)}</div>
+
+      <div className="row g-3 mb-4">
+        <div className="col-xl-8"><div className="rounded-4 p-3 p-lg-4 h-100" style={{ background: "#fff", border: "1px solid #e7e8f0", boxShadow: "0 8px 24px rgba(31, 35, 61, 0.04)" }}><div className="d-flex justify-content-between align-items-start"><div><h2 className="h6 mb-1" style={{ color: "#202238" }}>Revenue rhythm</h2><p className="small mb-0" style={{ color: "#9699aa" }}>A fictional twelve-month performance curve</p></div><span className="badge text-bg-light border">2026</span></div><div ref={revenueRef}></div></div></div>
+        <div className="col-xl-4"><div className="rounded-4 p-3 p-lg-4 h-100" style={{ background: "#fff", border: "1px solid #e7e8f0", boxShadow: "0 8px 24px rgba(31, 35, 61, 0.04)" }}><h2 className="h6 mb-1" style={{ color: "#202238" }}>Where customers shop</h2><p className="small mb-0" style={{ color: "#9699aa" }}>Illustrative category split</p><div ref={categoryRef}></div></div></div>
+      </div>
+
+      <div className="row g-3"><div className="col-xl-7"><div className="rounded-4 p-3 p-lg-4" style={{ background: "#fff", border: "1px solid #e7e8f0", boxShadow: "0 8px 24px rgba(31, 35, 61, 0.04)" }}><h2 className="h6 mb-1" style={{ color: "#202238" }}>Weekly footfall</h2><p className="small mb-0" style={{ color: "#9699aa" }}>A sample view of store visits</p><div ref={trafficRef}></div></div></div><div className="col-xl-5"><div className="rounded-4 p-3 p-lg-4 h-100" style={{ background: "#202238", color: "#fff" }}><span className="badge rounded-pill mb-4" style={{ background: "#39345f", color: "#d8d4ef" }}>DEMO NOTE</span><h2 className="h5 mb-3">Made for showcasing.</h2><p className="small mb-4" style={{ color: "#c8c3e7" }}>This dashboard intentionally uses fixed sample figures. The protected workspace contains the live inventory and POS data.</p><div className="d-flex justify-content-between border-top pt-3" style={{ borderColor: "#4b4770 !important" }}><span className="small" style={{ color: "#a9a4cb" }}>Data mode</span><strong className="small">Static demo</strong></div></div></div></div>
+    </main>
+  );
+}
+
 export function DashboardWorkspace({ live = false, fullScreen = false, onShowDemo }) {
+  const navigate = useNavigate();
   const { day, dateTime } = useDashboardDateTime();
   const salesChartRef = useRef(null);
   const [liveProducts, setLiveProducts] = useState([]);
@@ -296,9 +367,10 @@ export function DashboardWorkspace({ live = false, fullScreen = false, onShowDem
 
   const chartOptions = useMemo(() => salesPurchaseOptions(), []);
   useChart(salesChartRef, chartOptions);
+  const openDemoDashboard = onShowDemo || (() => navigate("/dashboard"));
 
   const content = <>
-      {fullScreen ? <div className="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4"><div><p className="text-primary text-uppercase small fw-semibold mb-1">Live workspace</p><h1 className="h3 mb-1">Operations dashboard</h1><p className="text-muted mb-0">Inventory data refreshes automatically.</p></div><button type="button" className="btn btn-outline-secondary" onClick={onShowDemo}>View demo dashboard</button></div> : <PageHeader title="Dashboard" subtitle="Demo workspace">
+      {fullScreen ? <section className="rounded-4 p-4 p-lg-5 mb-4 text-white overflow-hidden position-relative" style={{ background: "linear-gradient(120deg, #123b52 0%, #166b75 58%, #20a39e 100%)" }}><div className="position-relative" style={{ zIndex: 1 }}><span className="badge rounded-pill px-3 py-2 mb-3" style={{ background: "rgba(255,255,255,0.16)", fontSize: "0.7rem", letterSpacing: "0.08em" }}>LIVE WORKSPACE</span><h1 className="mb-2" style={{ fontSize: "clamp(1.6rem, 3vw, 2.35rem)", fontWeight: 750, letterSpacing: "-0.04em" }}>Your store, live.</h1><p className="mb-0" style={{ color: "#c6f0ed", maxWidth: 560 }}>Current inventory and POS performance, refreshed automatically.</p></div><i className="ti ti-activity-heartbeat position-absolute" style={{ right: "5%", bottom: "-18px", color: "rgba(255,255,255,0.12)", fontSize: "12rem" }}></i><div className="position-absolute end-0 bottom-0 p-4 text-end"><button type="button" aria-label="Open showcase dashboard" title="Open showcase dashboard" className="border-0 p-0 d-block ms-auto" onClick={openDemoDashboard} style={{ color: "#b9e7e3", background: "transparent", font: "inherit", fontSize: "0.78rem", cursor: "pointer" }}>{dateTime}</button></div></section> : <PageHeader title="Dashboard" subtitle="Demo workspace">
         <div className="date-time-box border rounded-3 bg-white px-4 py-3 text-md-end shadow-sm"><p className="mb-0 fw-semibold text-dark fs-5">{day}</p><p className="mb-0 text-secondary small fw-bold">{dateTime}</p></div>
       </PageHeader>}
 
@@ -321,13 +393,13 @@ export function DashboardWorkspace({ live = false, fullScreen = false, onShowDem
       </div>
 
       <div className="row g-3 mb-3">
-        <div className="col-lg-6">{live ? <div className="card h-100 border-0 shadow-sm"><div className="card-header bg-white px-4 py-3"><h3 className="h5 mb-0">Sales activity</h3></div><div className="card-body d-flex align-items-center justify-content-center text-center py-5"><div><p className="text-muted mb-0">Live sales data will appear after transactions are recorded.</p></div></div></div> : <div className="card h-100 border-0 shadow-sm"><div className="card-header d-flex justify-content-between align-items-center bg-white px-4 py-3"><h3 className="h5 mb-0">Sales vs Purchase</h3><span className="badge text-bg-light border">This year</span></div><div className="card-body p-4"><div ref={salesChartRef}></div></div></div>}</div>
-        <div className="col-lg-6"><div className="card h-100 border-0 shadow-sm"><div className="card-header bg-white d-flex justify-content-between align-items-center px-4 py-3"><h3 className="h5 mb-0">Top Selling Products</h3><button type="button" className="btn btn-sm btn-outline-secondary"><i className="ti ti-calendar me-1"></i>Today</button></div><div className="card-body d-flex align-items-center justify-content-center text-center py-5"><div><i className="ti ti-shopping-bag fs-1 text-muted"></i><p className="text-muted mb-0 mt-2">No sales data yet.</p></div></div></div></div>
+        <div className="col-lg-6"><DairyStockMonitor products={dairyProducts} /></div>
+        <div className="col-lg-6"><LowStockMonitor products={lowStock} loading={loading} error={error} /></div>
       </div>
 
       <div className="row g-3 mb-3">
-        <div className="col-lg-6"><DairyStockMonitor products={dairyProducts} /></div>
-        <div className="col-lg-6"><LowStockMonitor products={lowStock} loading={loading} error={error} /></div>
+        <div className="col-lg-6">{live ? <div className="card h-100 border-0 shadow-sm"><div className="card-header bg-white px-4 py-3"><h3 className="h5 mb-0">Sales activity</h3></div><div className="card-body d-flex align-items-center justify-content-center text-center py-5"><div><p className="text-muted mb-0">Live sales data will appear after transactions are recorded.</p></div></div></div> : <div className="card h-100 border-0 shadow-sm"><div className="card-header d-flex justify-content-between align-items-center bg-white px-4 py-3"><h3 className="h5 mb-0">Sales vs Purchase</h3><span className="badge text-bg-light border">This year</span></div><div className="card-body p-4"><div ref={salesChartRef}></div></div></div>}</div>
+        <div className="col-lg-6"><div className="card h-100 border-0 shadow-sm"><div className="card-header bg-white d-flex justify-content-between align-items-center px-4 py-3"><h3 className="h5 mb-0">Top Selling Products</h3><button type="button" className="btn btn-sm btn-outline-secondary"><i className="ti ti-calendar me-1"></i>Today</button></div><div className="card-body d-flex align-items-center justify-content-center text-center py-5"><div><i className="ti ti-shopping-bag fs-1 text-muted"></i><p className="text-muted mb-0 mt-2">No sales data yet.</p></div></div></div></div>
       </div>
 
       <div className="card border-0 shadow-sm"><div className="card-header bg-white d-flex justify-content-between align-items-center px-4 py-3"><h3 className="h5 mb-0">Recent Sales</h3><button type="button" className="btn btn-sm btn-outline-secondary"><i className="ti ti-calendar-event me-1"></i>Weekly</button></div><div className="card-body d-flex align-items-center justify-content-center text-center py-5"><div><i className="ti ti-receipt-2 fs-1 text-muted"></i><p className="text-muted mb-0 mt-2">No sales data yet.</p></div></div></div>
@@ -337,5 +409,5 @@ export function DashboardWorkspace({ live = false, fullScreen = false, onShowDem
 }
 
 export default function Dashboard() {
-  return <DashboardWorkspace />;
+  return <DemoDashboard />;
 }

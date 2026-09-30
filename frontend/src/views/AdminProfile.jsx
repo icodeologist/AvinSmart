@@ -75,7 +75,7 @@ export default function AdminProfile() {
             <div className="col-md-6"><label className="form-label" htmlFor="profilePhoto">Profile photo</label><input id="profilePhoto" type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="form-control" onChange={(event) => { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = () => setPhotoBase64(reader.result); reader.readAsDataURL(file); }} /></div>
             <div className="col-12"><button type="submit" className="btn btn-primary" disabled={saving}>{saving ? "Saving..." : "Update Profile"}</button></div>
           </form> : null}
-          <div className="text-center mb-4"><img src={photo} alt={displayName} className="avatar avatar-xxl rounded-circle" /></div>
+          <div className="text-center mb-4"><img src={photo} alt={displayName} className="avatar avatar-xxl rounded-circle" onError={(event) => { event.currentTarget.src = "/assets/images/avatar/avatar-1.jpg"; }} /></div>
           <div className="row g-4">
             <div className="col-md-6"><small className="text-muted d-block">Name</small><strong>{displayName}</strong></div>
             <div className="col-md-6"><small className="text-muted d-block">Email address</small><strong>{email}</strong></div>
@@ -83,7 +83,6 @@ export default function AdminProfile() {
             <div className="col-md-6"><small className="text-muted d-block">Role</small><strong>{role}</strong></div>
             <div className="col-md-6"><small className="text-muted d-block">Joined on</small><strong>{joined}</strong></div>
           </div>
-          {account?.accountType === "admin" ? <div className="border-top mt-4 pt-3"><Link to="/profile/live-dashboard" className="small text-secondary text-decoration-underline">Open workspace</Link></div> : null}
         </div>
       </div>
     </>

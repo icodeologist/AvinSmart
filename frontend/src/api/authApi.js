@@ -22,17 +22,6 @@ export function login({ email, password }) {
   return postJSON("/auth/login", { email, password }).then(unwrap);
 }
 
-export function register({ username, email, password, reenterPassword, phoneNum, photoBase64 }) {
-  return postJSON("/auth/register", {
-    username,
-    email,
-    password,
-    reenter_password: reenterPassword,
-    phone_num: phoneNum,
-    photo_base64: photoBase64,
-  });
-}
-
 export async function verifyAdminPassword(password) {
   const response = await fetch(`${API_BASE_URL}/auth/verify-password`, {
     method: "POST",

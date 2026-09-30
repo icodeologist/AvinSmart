@@ -124,7 +124,6 @@ export default function ManageStaff() {
     <>
       <PageHeader title="Manage Staff" subtitle="View your staff members">
         <Link to="/staff/sales/login" className="btn btn-success"><i className="ti ti-device-desktop me-1"></i>Open Staff / Sales Login</Link>
-        <Link to="/staff/salaries" className="btn btn-primary"><i className="ti ti-wallet me-1"></i>View Staff Salaries</Link>
         <Link to="/staff/register" className="btn btn-outline-primary"><i className="ti ti-user-plus me-1"></i>Register New Staff</Link>
       </PageHeader>
 

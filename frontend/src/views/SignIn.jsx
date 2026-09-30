@@ -39,11 +39,7 @@ export default function SignIn() {
       setAlert({ type: "success", message: "Login successful. Redirecting to the admin dashboard..." });
       setTimeout(() => navigate("/dashboard"), 600);
     } catch (error) {
-      setAlert({
-        type: "danger",
-        message: `${error.message}. New admin? `,
-        link: true,
-      });
+      setAlert({ type: "danger", message: error.message });
     } finally {
       setSubmitting(false);
     }
@@ -64,7 +60,6 @@ export default function SignIn() {
             {alert ? (
               <div id="signinAlert" className={`alert alert-${alert.type}`} role="alert">
                 {alert.message}
-                {alert.link ? <Link to="/signup" className="alert-link">Create an account</Link> : null}
               </div>
             ) : null}
             <div className="mb-3">

@@ -9,6 +9,7 @@ import (
 
 	"avinsmart/backend/internal/api"
 	"avinsmart/backend/internal/models"
+	"avinsmart/backend/internal/outletaccess"
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -67,6 +68,46 @@ type attendanceRequest struct {
 	Date    string `json:"date"`
 	Status  string `json:"status"`
 	Note    string `json:"note"`
+}
+
+type bulkAttendanceEntry struct {
+	StaffID uint   `json:"staff_id"`
+	Status  string `json:"status"`
+	Note    string `json:"note"`
+}
+
+type bulkAttendanceRequest struct {
+	Date    string                `json:"date"`
+	Entries []bulkAttendanceEntry `json:"entries"`
+}
+
+func (p *bulkAttendanceRequest) validate() api.Fields {
+	fields := api.NewFields()
+	p.Date = strings.TrimSpace(p.Date)
+	if _, err := parseDate(p.Date); err != nil {
+		fields.Add("date", err.Error())
+	}
+	if len(p.Entries) == 0 {
+		fields.Add("entries", "at least one staff attendance entry is required")
+		return fields
+	}
+	seen := make(map[uint]bool, len(p.Entries))
+	for index := range p.Entries {
+		entry := &p.Entries[index]
+		entry.Status = strings.TrimSpace(strings.ToLower(entry.Status))
+		entry.Note = strings.TrimSpace(entry.Note)
+		if entry.StaffID == 0 {
+			fields.Add(fmt.Sprintf("entries.%d.staff_id", index), "staff_id is required")
+		}
+		if seen[entry.StaffID] {
+			fields.Add(fmt.Sprintf("entries.%d.staff_id", index), "staff_id must appear only once")
+		}
+		seen[entry.StaffID] = true
+		if !attendanceStatuses[entry.Status] {
+			fields.Add(fmt.Sprintf("entries.%d.status", index), "status must be present, absent, holiday, or not-marked")
+		}
+	}
+	return fields
 }
 
 func (p *attendanceRequest) validate() api.Fields {
@@ -131,6 +172,70 @@ func UpsertAttendance(db *gorm.DB) http.HandlerFunc {
 		}
 		db.Preload("Staff").First(&record, record.ID)
 		api.WriteSuccess(w, http.StatusOK, record)
+	}
+}
+
+// BulkUpsertAttendance records one day's attendance for all selected staff in
+// a single transaction so a daily register cannot be partially saved.
+func BulkUpsertAttendance(db *gorm.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		actor, ok := principal(r)
+		if !ok {
+			api.WriteError(w, http.StatusUnauthorized, "authentication is required")
+			return
+		}
+
+		var payload bulkAttendanceRequest
+		if err := api.DecodeJSON(r, &payload); err != nil {
+			api.WriteError(w, http.StatusBadRequest, "invalid json body")
+			return
+		}
+		if fields := payload.validate(); fields.HasErrors() {
+			api.WriteValidation(w, "invalid attendance", fields)
+			return
+		}
+		if payload.Date > currentDateUTC() {
+			api.WriteError(w, http.StatusBadRequest, "attendance cannot be recorded for a future date")
+			return
+		}
+
+		records := make([]models.Attendance, 0, len(payload.Entries))
+		err := db.Transaction(func(tx *gorm.DB) error {
+			for _, entry := range payload.Entries {
+				if _, err := authorizeStaff(tx, actor, entry.StaffID); err != nil {
+					return err
+				}
+				var record models.Attendance
+				query := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("staff_id = ? AND date = ?", entry.StaffID, payload.Date).First(&record)
+				if errors.Is(query.Error, gorm.ErrRecordNotFound) {
+					record = models.Attendance{StaffID: entry.StaffID, Date: payload.Date}
+				} else if query.Error != nil {
+					return query.Error
+				}
+				before := record
+				record.Status, record.Note, record.UpdatedByID = entry.Status, entry.Note, &actor.UserID
+				if err := tx.Save(&record).Error; err != nil {
+					return err
+				}
+				if err := recordAudit(tx, "attendance", record.ID, "upserted", actor.UserID, before, record); err != nil {
+					return err
+				}
+				records = append(records, record)
+			}
+			return nil
+		})
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) || errors.Is(err, outletaccess.ErrOutletForbidden) {
+				writeStaffAccessError(w, err)
+				return
+			}
+			api.WriteError(w, http.StatusInternalServerError, "could not save daily attendance")
+			return
+		}
+		for index := range records {
+			db.Preload("Staff").First(&records[index], records[index].ID)
+		}
+		api.WriteSuccess(w, http.StatusOK, records)
 	}
 }
 

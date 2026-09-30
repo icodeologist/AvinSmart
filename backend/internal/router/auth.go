@@ -14,7 +14,6 @@ import (
 
 func AuthRoutes(db *gorm.DB, cfg config.Config) http.Handler {
 	r := chi.NewRouter()
-	r.Post("/register", auth.RegisterAdmin(db))
 	r.Post("/login", auth.LoginAdmin(db, cfg))
 	r.With(middleware.RequireAuth(cfg)).Patch("/profile", profile.Update(db))
 	r.With(middleware.RequireAuth(cfg), middleware.RequireRoles("admin")).Post("/verify-password", profile.VerifyAdminPassword(db))

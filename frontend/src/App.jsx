@@ -13,7 +13,6 @@ import ManageStaff from "./views/ManageStaff.jsx";
 import RegisterStaff from "./views/RegisterStaff.jsx";
 import ManageSalaries from "./views/ManageSalaries.jsx";
 import SignIn from "./views/SignIn.jsx";
-import SignUp from "./views/SignUp.jsx";
 import NotFound from "./views/NotFound.jsx";
 import CashFlow from "./views/CashFlow.jsx";
 import AdminProfile from "./views/AdminProfile.jsx";
@@ -75,7 +74,6 @@ export default function App() {
       <Route path="/staff/inventory/login" element={<PosLogin role="inventory_staff" />} />
       <Route path="/pos" element={<PosPage />} />
       <Route path="/admin/login" element={<SignIn />} />
-      <Route path="/signup" element={<SignUp />} />
       <Route path="/404" element={<NotFound />} />
       <Route path="*" element={<NotFound />} />
     </Routes>

@@ -2,6 +2,7 @@ package router
 
 import (
 	"net/http"
+	"os"
 	"slices"
 
 	"avinsmart/backend/internal/config"
@@ -15,7 +16,7 @@ import (
 func New(db *gorm.DB, cfg config.Config) http.Handler {
 	r := chi.NewRouter()
 	r.Use(corsMiddleware(cfg.AllowedOrigins))
-	r.Handle("/static/*", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
+	r.Handle("/static/*", http.StripPrefix("/static/", http.FileServer(http.Dir(staticDirectory()))))
 	r.Get("/", rootHandler)
 	r.Get("/ping", rootHandler)
 	r.Get("/health/db", databaseHealthHandler(db))
@@ -35,6 +36,17 @@ func New(db *gorm.DB, cfg config.Config) http.Handler {
 	})
 
 	return r
+}
+
+// staticDirectory supports starting the development server from either the
+// backend directory or cmd/server, without losing access to uploaded photos.
+func staticDirectory() string {
+	for _, dir := range []string{"static", "../static", "../../static", "backend/static"} {
+		if info, err := os.Stat(dir); err == nil && info.IsDir() {
+			return dir
+		}
+	}
+	return "static"
 }
 
 func corsMiddleware(allowedOrigins []string) func(http.Handler) http.Handler {
