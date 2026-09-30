@@ -15,6 +15,11 @@ function normalize(member) {
     role: member.role || "staff",
     status: member.status || "active",
     outlets: Array.isArray(member.outlets) ? member.outlets.map((outlet) => ({ id: outlet.id, name: outlet.name })) : [],
+    attendance: {
+      month: member.attendance?.month || "",
+      presentDays: Number(member.attendance?.present_days || 0),
+      absentDays: Number(member.attendance?.absent_days || 0),
+    },
     joinedOn: member.joinedOn || member.created_at || "",
     passwordSet: true,
   };

@@ -26,6 +26,14 @@ export default function StaffCard({ member, onView, onEdit, onResetPassword }) {
           <dt>Joined</dt>
           <dd>{formatDate(member.joinedOn)}</dd>
         </div>
+        <div>
+          <dt>Present this month</dt>
+          <dd className="text-success fw-semibold">{member.attendance?.presentDays || 0}</dd>
+        </div>
+        <div>
+          <dt>Absent this month</dt>
+          <dd className="text-danger fw-semibold">{member.attendance?.absentDays || 0}</dd>
+        </div>
       </dl>
       <div className="d-flex gap-2 mt-3 pt-3 border-top">
         <button type="button" className="btn btn-sm btn-outline-primary" onClick={() => onView(member)}><i className="ti ti-eye me-1"></i>View</button>
