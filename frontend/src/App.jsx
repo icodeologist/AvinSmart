@@ -30,16 +30,29 @@ function Landing() {
 }
 
 function RequireAdmin() {
+  try {
+    const staff = JSON.parse(sessionStorage.getItem("avinSmartPosStaff") || "null");
+    if (staff) {
+      if (getPosToken() && ["sales", "inventory_staff"].includes(staff.role) && ["/inventory", "/price-updates", "/profile"].includes(window.location.pathname)) return <Outlet />;
+      return <Navigate to={staff.role === "sales" ? "/pos" : "/staff/inventory/login"} replace />;
+    }
+  } catch {
+    return <Navigate to="/" replace />;
+  }
   if (getAdminToken()) return <Outlet />;
+  return <Navigate to="/" replace />;
+}
+
+function RequirePOS() {
   if (getPosToken()) {
     try {
       const staff = JSON.parse(sessionStorage.getItem("avinSmartPosStaff") || "null");
-      if (["sales", "inventory_staff"].includes(staff?.role) && ["/inventory", "/price-updates", "/profile"].includes(window.location.pathname)) return <Outlet />;
+      if (["sales", "inventory_staff"].includes(staff?.role)) return <Outlet />;
     } catch {
-      // Invalid session data falls through to the login page.
+      // Invalid session data falls through to the staff login page.
     }
   }
-  return <Navigate to="/" replace />;
+  return <Navigate to="/staff/sales/login" replace />;
 }
 
 export default function App() {
@@ -73,7 +86,9 @@ export default function App() {
       <Route path="/pos/login" element={<PosLogin role="sales" />} />
       <Route path="/staff/sales/login" element={<PosLogin role="sales" />} />
       <Route path="/staff/inventory/login" element={<PosLogin role="inventory_staff" />} />
-      <Route path="/pos" element={<PosPage />} />
+      <Route element={<RequirePOS />}>
+        <Route path="/pos" element={<PosPage />} />
+      </Route>
       <Route path="/admin/login" element={<SignIn />} />
       <Route path="/register" element={<RegisterAdmin />} />
       <Route path="/404" element={<NotFound />} />
