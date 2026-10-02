@@ -7,12 +7,10 @@ const mainLinks = [
   { to: "/outlets", icon: "ti ti-building-store", label: "Manage Outlets" },
   { to: "/price-updates", icon: "ti ti-chart-line", label: "Update Product" },
   { to: "/bills/create", icon: "ti ti-file-invoice", label: "Legacy Bill" },
-  { to: "/staff/login", icon: "ti ti-device-desktop", label: "Staff Login" },
   { to: "/staff", icon: "ti ti-users", label: "Manage Staff" },
   { to: "/staff/salaries", icon: "ti ti-wallet", label: "Salaries" },
   { to: "/reports", icon: "ti ti-receipt", label: "Reports" },
   { to: "/cash-flow", icon: "ti ti-cash", label: "Cash Flow" },
-  { to: "/404", icon: "ti ti-alert-circle", label: "404 Error" },
 ];
 
 const accountLinks = [

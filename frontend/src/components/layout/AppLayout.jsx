@@ -22,10 +22,20 @@ export default function AppLayout() {
         <div className="container-fluid">
           <Outlet />
 
-          <div className="row">
+          <div className="row app-footer-row">
             <div className="col-12">
               <footer className="text-center py-2 mt-6 text-secondary">
-                <p className="mb-0">Developed by <a href="https://github.com/icodeologist" target="_blank" className="text-primary">icodeologist</a></p>
+                <p className="mb-0">
+                  Developed by{" "}
+                  <a
+                    href="https://github.com/icodeologist"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-primary"
+                  >
+                    icodeologist
+                  </a>
+                </p>
               </footer>
             </div>
           </div>

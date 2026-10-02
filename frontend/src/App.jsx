@@ -6,6 +6,7 @@ import Inventory from "./views/Inventory.jsx";
 import CreateProduct from "./views/CreateProduct.jsx";
 import AddCategory from "./views/AddCategory.jsx";
 import ManageOutlets from "./views/ManageOutlets.jsx";
+import AddOutlet from "./views/AddOutlet.jsx";
 import OutletProducts from "./views/OutletProducts.jsx";
 import Reports from "./views/Reports.jsx";
 import Docs from "./views/Docs.jsx";
@@ -69,6 +70,7 @@ export default function App() {
         <Route path="/products/create" element={<Navigate to="/outlets" replace />} />
         <Route path="/categories/add" element={<Navigate to="/outlets" replace />} />
         <Route path="/outlets" element={<ManageOutlets />} />
+        <Route path="/outlets/add" element={<AddOutlet />} />
         <Route path="/outlets/categories/add" element={<AddCategory />} />
         <Route path="/outlets/:outletId" element={<OutletProducts />} />
         <Route path="/outlets/:outletId/products/create" element={<CreateProduct />} />

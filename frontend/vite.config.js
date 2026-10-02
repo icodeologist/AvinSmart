@@ -7,7 +7,7 @@ import react from '@vitejs/plugin-react'
 // the React SPA. Rewrite these clean routes back to the SPA shell (index.html)
 // so the dev server behaves like the built app.
 const spaCleanRoutes = new Set([
-  '/', '/inventory', '/products/create', '/categories/add', '/outlets', '/outlets/categories/add',
+  '/', '/inventory', '/products/create', '/categories/add', '/outlets', '/outlets/add', '/outlets/categories/add',
   '/dashboard', '/price-updates', '/cash-flow', '/profile', '/profile/live-dashboard',
   '/notifications', '/bills/create', '/reports', '/docs', '/login', '/signin', '/register', '/404',
 ])

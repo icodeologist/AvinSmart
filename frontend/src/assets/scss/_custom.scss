@@ -401,9 +401,19 @@
 	margin-left: 60px;
 }
 .content {
+	display: flex;
+	min-height: calc(100vh - 60px);
 	margin-left: 240px;
 	// transition: margin-left .3s;
 	// padding: 20px;
+}
+.content > .container-fluid {
+	display: flex;
+	flex: 1;
+	flex-direction: column;
+}
+.app-footer-row {
+	margin-top: auto;
 }
 .content.full {
 	margin-left: 60px;
