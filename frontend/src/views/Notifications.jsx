@@ -2,6 +2,9 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { fetchNotifications, markAllNotificationsRead, markNotificationRead } from "../api/notificationsApi.js";
 import SaleNotificationDetails from "../components/notifications/SaleNotificationDetails.jsx";
+import StaffLoginNotificationDetails from "../components/notifications/StaffLoginNotificationDetails.jsx";
+
+const NOTIFICATION_REFRESH_INTERVAL = 5000;
 
 function formatDate(value) {
   return new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
@@ -26,7 +29,7 @@ export default function Notifications() {
 
   useEffect(() => {
     load();
-    const timer = setInterval(load, 10000);
+    const timer = setInterval(load, NOTIFICATION_REFRESH_INTERVAL);
     window.addEventListener("focus", load);
     return () => {
       clearInterval(timer);
@@ -59,10 +62,17 @@ export default function Notifications() {
         {!loading && !items.length ? <div className="p-4 text-muted">You have no notifications.</div> : null}
         {items.map((item) => (
           <button key={item.id} type="button" className={`list-group-item list-group-item-action text-start p-4 ${item.read_at ? "" : "bg-primary-subtle"}`} onClick={() => read(item)}>
-            <div className="d-flex justify-content-between gap-3"><strong>{item.title}</strong><small className="text-muted text-nowrap">{formatDate(item.created_at)}</small></div>
-            <span className="badge text-bg-light text-capitalize mt-2">{(item.type || "general").replaceAll("_", " ")}</span>
+            <div className="d-flex flex-wrap justify-content-between align-items-start gap-2">
+              <strong className={item.read_at ? "" : "text-primary"}>{item.title}</strong>
+              <span className="badge bg-primary-subtle text-primary border border-primary-subtle">{formatDate(item.created_at)}</span>
+            </div>
+            <div className="d-flex flex-wrap gap-2 mt-2">
+              <span className="badge text-bg-info text-capitalize">{(item.type || "general").replaceAll("_", " ")}</span>
+              <span className={`badge ${item.read_at ? "text-bg-success" : "text-bg-warning"}`}>{item.read_at ? "Read" : "Unread"}</span>
+            </div>
             <div className="text-muted mt-1">{item.message}</div>
             <SaleNotificationDetails notification={item} />
+            <StaffLoginNotificationDetails notification={item} />
           </button>
         ))}
       </div></div>

@@ -10,6 +10,7 @@ type NotificationMetadata struct {
 	StaffID       uint   `json:"staff_id,omitempty"`
 	StaffName     string `json:"staff_name,omitempty"`
 	StaffEmail    string `json:"staff_email,omitempty"`
+	StaffRole     string `json:"staff_role,omitempty"`
 	CustomerID    *uint  `json:"customer_id"`
 	CustomerName  string `json:"customer_name"`
 	Total         string `json:"total,omitempty"`

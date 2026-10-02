@@ -2,6 +2,7 @@ package staff
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -9,6 +10,7 @@ import (
 	"avinsmart/backend/internal/auth"
 	"avinsmart/backend/internal/config"
 	"avinsmart/backend/internal/models"
+	"avinsmart/backend/internal/notifications"
 
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
@@ -65,10 +67,13 @@ func Login(db *gorm.DB, cfg config.Config) http.HandlerFunc {
 			api.WriteError(w, http.StatusUnauthorized, "this staff account is not assigned to the selected role")
 			return
 		}
-
 		token, err := auth.IssueToken(cfg, member.ID, member.Email, member.Role, "staff")
 		if err != nil {
 			api.WriteError(w, http.StatusInternalServerError, "could not create auth token")
+			return
+		}
+		if err := notifyAdminsOfStaffLogin(db, member); err != nil {
+			api.WriteError(w, http.StatusInternalServerError, "could not notify administrators of staff login")
 			return
 		}
 
@@ -77,4 +82,37 @@ func Login(db *gorm.DB, cfg config.Config) http.HandlerFunc {
 			"user":  member,
 		})
 	}
+}
+
+func notifyAdminsOfStaffLogin(db *gorm.DB, member models.Staff) error {
+	var admins []models.Admin
+	if err := db.Select("id").Find(&admins).Error; err != nil {
+		return err
+	}
+
+	roleName := "Sales Staff"
+	if member.Role == "inventory_staff" {
+		roleName = "Inventory Staff"
+	}
+	metadata := models.NotificationMetadata{
+		StaffID:    member.ID,
+		StaffName:  member.Name,
+		StaffEmail: member.Email,
+		StaffRole:  member.Role,
+	}
+	if len(member.Outlets) > 0 {
+		metadata.OutletID = member.Outlets[0].ID
+		metadata.OutletName = member.Outlets[0].Name
+	}
+
+	title := fmt.Sprintf("%s logged in", member.Name)
+	message := fmt.Sprintf("%s logged in as %s.", member.Name, roleName)
+	return db.Transaction(func(tx *gorm.DB) error {
+		for _, admin := range admins {
+			if _, err := notifications.CreateWithMetadata(tx, admin.ID, "admin", "staff_login", title, message, "/staff", metadata); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
 }

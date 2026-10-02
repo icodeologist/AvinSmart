@@ -18,6 +18,7 @@ import (
 	"avinsmart/backend/internal/money"
 	"avinsmart/backend/internal/router"
 
+	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
@@ -100,6 +101,52 @@ func TestPOSIntegration(t *testing.T) {
 		db.Model(&models.Notification{}).Where("recipient_id = ? AND type = ?", f.admin.ID, "sale_completed").Count(&count)
 		if count != 1 {
 			t.Fatalf("completed-sale notifications = %d, want 1 after payment retry", count)
+		}
+	})
+
+	t.Run("staff login notifies admins for supported roles", func(t *testing.T) {
+		f := newFixture(t, db)
+		password := "correct-password"
+		passwordHash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.MinCost)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var member models.Staff
+		if err := db.Where("email = ?", "test-sales@example.com").First(&member).Error; err != nil {
+			t.Fatal(err)
+		}
+		if err := db.Model(&member).Update("password_hash", string(passwordHash)).Error; err != nil {
+			t.Fatal(err)
+		}
+
+		for _, role := range []string{"sales", "inventory_staff"} {
+			if err := db.Model(&member).Update("role", role).Error; err != nil {
+				t.Fatal(err)
+			}
+			body := fmt.Sprintf(`{"email":"%s","password":"%s","role":"%s"}`, member.Email, password, role)
+			response := f.request(http.MethodPost, "/api/v1/staff/login", body, "")
+			if response.Code != http.StatusOK {
+				t.Fatalf("%s login status = %d: %s", role, response.Code, response.Body.String())
+			}
+
+			var notification models.Notification
+			if err := db.Where("recipient_id = ? AND recipient_type = ? AND type = ?", f.admin.ID, "admin", "staff_login").Order("id DESC").First(&notification).Error; err != nil {
+				t.Fatalf("find %s login notification: %v", role, err)
+			}
+			if notification.Metadata.StaffID != member.ID || notification.Metadata.StaffName != member.Name || notification.Metadata.StaffEmail != member.Email || notification.Metadata.StaffRole != role {
+				t.Fatalf("%s login notification metadata = %+v", role, notification.Metadata)
+			}
+			if notification.Metadata.OutletID != f.outletA.ID || notification.Metadata.OutletName != f.outletA.Name {
+				t.Fatalf("%s login notification outlet metadata = %+v", role, notification.Metadata)
+			}
+		}
+
+		var count int64
+		if err := db.Model(&models.Notification{}).Where("recipient_id = ? AND type = ?", f.admin.ID, "staff_login").Count(&count).Error; err != nil {
+			t.Fatal(err)
+		}
+		if count != 2 {
+			t.Fatalf("staff login notifications = %d, want 2", count)
 		}
 	})
 

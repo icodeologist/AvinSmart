@@ -3,7 +3,13 @@ import { useEffect, useState } from "react";
 import { getAdminToken } from "../../api/config.js";
 import { API_BASE_URL } from "../../api/config.js";
 import { fetchNotifications, fetchUnreadCount, markAllNotificationsRead, markNotificationRead } from "../../api/notificationsApi.js";
-import SaleNotificationDetails from "../notifications/SaleNotificationDetails.jsx";
+
+const NOTIFICATION_REFRESH_INTERVAL = 5000;
+
+async function fetchUnreadNotifications() {
+  const notifications = await fetchNotifications(100);
+  return notifications.filter((item) => !item.read_at).slice(0, 5);
+}
 
 function currentAccount() {
   try {
@@ -29,18 +35,19 @@ export default function Topbar({ onToggle, onMobileOpen }) {
   const [items, setItems] = useState([]);
   const [unread, setUnread] = useState(0);
   const account = currentAccount();
+  const canViewNotifications = account?.accountType === "admin";
   const accountName = account?.username || account?.name || account?.email || "Account";
   const accountRole = account?.accountType === "admin" ? "Administrator" : account?.role === "inventory_staff" ? "Inventory Staff" : "Sales Staff";
   const accountPhoto = photoPath(account?.photo);
 
   async function refresh() {
-    if (!getAdminToken()) return;
-    try { setUnread(await fetchUnreadCount()); if (open) setItems(await fetchNotifications(5)); } catch { /* dashboard remains usable if notifications are unavailable */ }
+    if (!canViewNotifications || !getAdminToken()) return;
+    try { setUnread(await fetchUnreadCount()); if (open) setItems(await fetchUnreadNotifications()); } catch { /* dashboard remains usable if notifications are unavailable */ }
   }
 
   useEffect(() => {
     refresh();
-    const timer = setInterval(refresh, 10000);
+    const timer = setInterval(refresh, NOTIFICATION_REFRESH_INTERVAL);
     window.addEventListener("focus", refresh);
     return () => {
       clearInterval(timer);
@@ -51,19 +58,19 @@ export default function Topbar({ onToggle, onMobileOpen }) {
   async function toggleNotifications() {
     const next = !open;
     setOpen(next);
-    if (next) { try { setItems(await fetchNotifications(5)); } catch { setItems([]); } }
+    if (next) { try { setItems(await fetchUnreadNotifications()); } catch { setItems([]); } }
   }
 
   async function read(item) {
     if (!item.read_at) { await markNotificationRead(item.id); setUnread((count) => Math.max(0, count - 1)); }
     setOpen(false);
-    navigate(item.action_url || "/notifications");
+    navigate("/notifications");
   }
 
   async function readAll() {
     await markAllNotificationsRead();
     setUnread(0);
-    setItems((current) => current.map((item) => ({ ...item, read_at: item.read_at || new Date().toISOString() })));
+    setItems([]);
   }
 
   return (
@@ -77,18 +84,18 @@ export default function Topbar({ onToggle, onMobileOpen }) {
       </button>
 
       <div className="ms-auto d-flex align-items-center gap-3">
-        <button className="position-relative btn-icon btn-sm btn-light btn rounded-circle" type="button" aria-label="Notifications" onClick={toggleNotifications}>
+        {canViewNotifications ? <><button className={`position-relative btn-icon btn-sm btn rounded-circle ${open ? "btn-primary text-white" : "btn-light"}`} type="button" aria-label="Notifications" aria-expanded={open} onClick={toggleNotifications}>
           <i className="ti ti-bell"></i>
           {unread > 0 ? <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger mt-2 ms-n2">
             {unread > 99 ? "99+" : unread}
             <span className="visually-hidden">unread messages</span>
           </span> : null}
         </button>
-        {open ? <div className="dropdown-menu show p-0 shadow" style={{ right: 0, left: "auto", top: "calc(100% + 8px)", width: "min(360px, 90vw)" }}>
-          <div className="d-flex justify-content-between align-items-center p-3 border-bottom"><strong>Notifications</strong><button className="btn btn-link btn-sm p-0" type="button" onClick={readAll} disabled={!unread}>Mark all read</button></div>
-          {items.length ? items.map((item) => <button key={item.id} type="button" className={`dropdown-item text-wrap p-3 border-bottom ${item.read_at ? "" : "bg-primary-subtle"}`} onClick={() => read(item)}><strong className="d-block">{item.title}</strong><span className="badge text-bg-light text-capitalize my-1">{(item.type || "general").replaceAll("_", " ")}</span><small className="text-muted d-block">{item.message}</small><SaleNotificationDetails notification={item} compact /></button>) : <div className="p-3 text-muted small">No notifications yet.</div>}
+        {open ? <div className="dropdown-menu show p-0 shadow" style={{ right: 0, left: "auto", top: "calc(100% + 8px)", width: "min(320px, 90vw)" }}>
+          <div className="d-flex justify-content-between align-items-center px-3 py-2 border-bottom"><strong className="small">Notifications</strong><button className="btn btn-link btn-sm p-0" type="button" onClick={readAll} disabled={!unread}>Mark all read</button></div>
+          {items.length ? items.map((item) => <button key={item.id} type="button" className="dropdown-item px-3 py-2 border-bottom bg-primary-subtle" onClick={() => read(item)}><strong className="d-block small text-primary text-truncate">{item.title}</strong><small className="text-muted d-block text-truncate">{item.message}</small></button>) : <div className="p-3 text-muted small">No unread notifications.</div>}
           <Link to="/notifications" className="d-block text-center p-2 small" onClick={() => setOpen(false)}>View all notifications</Link>
-        </div> : null}
+        </div> : null}</> : null}
         <Link to="/profile" className="d-flex align-items-center gap-2 text-decoration-none" aria-label="Open profile"><span className="d-none d-md-block text-end"><strong className="d-block small text-dark">{accountName}</strong><small className="text-muted">{accountRole}</small></span><img src={accountPhoto} alt={accountName} className="avatar avatar-sm rounded-circle" onError={(event) => { event.currentTarget.src = "/assets/images/avatar/avatar-1.jpg"; }} /></Link>
       </div>
     </nav>
