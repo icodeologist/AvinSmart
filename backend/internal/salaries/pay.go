@@ -94,19 +94,16 @@ func MarkPaid(db *gorm.DB) http.HandlerFunc {
 
 // payableSalaryForRecord is the payment-time counterpart to the payroll
 // summary. It prevents a client from paying an amount different from the
-// attendance- and leave-based calculation for the salary's pay period.
+// attendance-based calculation for the salary's pay period.
 func payableSalaryForRecord(db *gorm.DB, record models.Salary) (money.Amount, error) {
 	calendar, err := getCalendar(db, record.PayPeriod)
 	if err != nil {
 		return money.Zero(), err
 	}
 	start, end := record.PayPeriod+"-01", nextMonth(record.PayPeriod)
-	var presentDays, paidLeaveDays int64
+	var presentDays int64
 	if err := db.Model(&models.Attendance{}).Where("staff_id = ? AND date >= ? AND date < ? AND status = ?", record.StaffID, start, end, "present").Count(&presentDays).Error; err != nil {
 		return money.Zero(), err
 	}
-	if err := db.Model(&models.LeaveRequest{}).Where("staff_id = ? AND date >= ? AND date < ? AND status = ?", record.StaffID, start, end, "approved").Count(&paidLeaveDays).Error; err != nil {
-		return money.Zero(), err
-	}
-	return payableAmount(record.Amount, int(presentDays+paidLeaveDays), calendar.WorkingDays), nil
+	return payableAmount(record.Amount, int(presentDays), calendar.WorkingDays), nil
 }

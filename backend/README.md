@@ -86,9 +86,7 @@ Salary endpoints:
 - `PUT /api/v1/salaries/calendar`
 - `GET /api/v1/salaries/attendance?staff_id=1&month=YYYY-MM`
 - `PUT /api/v1/salaries/attendance`
-- `GET /api/v1/salaries/leave-requests?staff_id=1&month=YYYY-MM`
-- `POST /api/v1/salaries/leave-requests`
-- `PATCH /api/v1/salaries/leave-requests/{id}`
+- `PUT /api/v1/salaries/attendance/bulk`
 
 Example salary body:
 
@@ -103,15 +101,13 @@ Example salary body:
 
 Salary amounts are decimal strings with at most two decimal places. Currency is
 limited to INR, USD, EUR, or GBP, and all salary records in one pay period use
-the same currency. Mutating salary and leave requests require a unique
+the same currency. Mutating salary and attendance requests require a unique
 `Idempotency-Key` header. Only admins and managers may manage payroll; managers
-can access staff assigned to their outlets. Leave requests are manager-created,
-must be in the selected month, cannot be future-dated, and are unique per staff
-member/date. Paid salary records are immutable.
+can access staff assigned to their outlets. Paid salary records are immutable.
 
 Attendance and payroll dates use UTC `YYYY-MM-DD` values. Payroll uses fixed
-monthly salary prorated by present days plus approved paid leave over the
-configured working-day count; weekends are excluded from the default count.
+monthly salary prorated by present days over the configured working-day count;
+weekends are excluded from the default count.
 Payroll audit history is available to administrators through the audit endpoint.
 
 Attendance example:

@@ -10,6 +10,7 @@ export default function Inventory() {
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("");
+  const [sortBy, setSortBy] = useState("stock_asc");
 
   useEffect(() => {
     let cancelled = false;
@@ -31,26 +32,46 @@ export default function Inventory() {
   }, []);
 
   const categories = useMemo(
-    () => [...new Set(products.map((product) => product.category?.name).filter(Boolean))],
+    () => [...new Set(products.map((product) => product.category?.name).filter(Boolean))].sort((first, second) => first.localeCompare(second)),
     [products]
   );
 
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
-    return products.filter((product) => {
-      const matchesCategory = !category || product.category?.name === category;
-      const matchesSearch =
-        !query ||
-        [product.title, product.sku_id, product.category?.name, product.sub_category?.name]
-          .filter(Boolean)
-          .some((field) => field.toLowerCase().includes(query));
-      return matchesCategory && matchesSearch;
-    });
-  }, [products, search, category]);
+    return products
+      .filter((product) => {
+        const matchesCategory = !category || product.category?.name === category;
+        const matchesSearch =
+          !query ||
+          [product.title, product.sku_id, product.category?.name, product.sub_category?.name]
+            .filter(Boolean)
+            .some((field) => field.toLowerCase().includes(query));
+        return matchesCategory && matchesSearch;
+      })
+      .sort((first, second) => {
+        const titleDifference = String(first.title || "").localeCompare(String(second.title || ""));
+        if (sortBy === "stock_desc") return Number(second.quantity || 0) - Number(first.quantity || 0) || titleDifference;
+        if (sortBy === "price_asc") return Number(first.retail_price || 0) - Number(second.retail_price || 0) || titleDifference;
+        if (sortBy === "price_desc") return Number(second.retail_price || 0) - Number(first.retail_price || 0) || titleDifference;
+        if (sortBy === "category_asc") {
+          return String(first.category?.name || "").localeCompare(String(second.category?.name || "")) || titleDifference;
+        }
+        return Number(first.quantity || 0) - Number(second.quantity || 0) || titleDifference;
+      });
+  }, [products, search, category, sortBy]);
+
+  function resetView() {
+    setSearch("");
+    setCategory("");
+    setSortBy("stock_asc");
+  }
 
   return (
     <>
       <PageHeader title="Inventory" subtitle="Manage your product inventory">
+        {!getPosToken() ? <Link to="/outlets/categories/add" className="btn btn-sm btn-outline-primary">
+          <i className="ti ti-category-plus"></i> Add Category
+        </Link> : null}
         <Link to="/outlets" className="btn btn-sm btn-primary">
           <i className="ti ti-building-store"></i> Select Outlet to Add Product
         </Link>
@@ -81,6 +102,28 @@ export default function Inventory() {
                   <option value={name} key={name}>{name}</option>
                 ))}
               </select>
+              <select
+                id="inventorySort"
+                className="form-select form-select-sm"
+                style={{ maxWidth: 190 }}
+                value={sortBy}
+                onChange={(event) => setSortBy(event.target.value)}
+                aria-label="Sort inventory"
+              >
+                <option value="stock_asc">Stock: Low to High</option>
+                <option value="stock_desc">Stock: High to Low</option>
+                <option value="price_asc">Retail Price: Low to High</option>
+                <option value="price_desc">Retail Price: High to Low</option>
+                <option value="category_asc">Category: A to Z</option>
+              </select>
+              <button
+                type="button"
+                className="btn btn-sm btn-outline-secondary"
+                onClick={resetView}
+                disabled={!search && !category && sortBy === "stock_asc"}
+              >
+                <i className="ti ti-restore"></i> Reset
+              </button>
             </div>
             <div className="d-flex gap-2">
               <button className="btn btn-sm btn-outline-secondary">
@@ -98,29 +141,26 @@ export default function Inventory() {
                 <tr>
                   <th>Image</th>
                   <th>Code</th>
-                  <th>Category</th>
-                  <th>Subcategory</th>
                   <th>Bought Price</th>
                   <th>Whole Sale</th>
                   <th>Retail Price</th>
                   <th>Customer Display</th>
                   <th>Unit</th>
                   <th>Quantity</th>
-                  <th>Action</th>
                 </tr>
               </thead>
               <tbody id="inventoryTableBody">
                 {loading ? (
                   <tr>
-                    <td colSpan={11} className="text-center py-4 text-secondary">Loading products...</td>
+                    <td colSpan={8} className="text-center py-4 text-secondary">Loading products...</td>
                   </tr>
                 ) : error ? (
                   <tr>
-                    <td colSpan={11} className="text-center py-4 text-danger">{error}</td>
+                    <td colSpan={8} className="text-center py-4 text-danger">{error}</td>
                   </tr>
                 ) : !filtered.length ? (
                   <tr>
-                    <td colSpan={11} className="text-center py-4 text-secondary">No products found.</td>
+                    <td colSpan={8} className="text-center py-4 text-secondary">No products found.</td>
                   </tr>
                 ) : (
                   filtered.map((product) => (
@@ -137,18 +177,12 @@ export default function Inventory() {
                         </a>
                       </td>
                       <td>{product.sku_id}</td>
-                      <td>{product.category?.name || "-"}</td>
-                      <td>{product.sub_category?.name || "-"}</td>
                       <td>{formatPrice(product.bought_price)}</td>
                       <td>{formatPrice(product.whole_sale_price)}</td>
                       <td>{formatPrice(product.retail_price)}</td>
                       <td>{formatPrice(product.customer_display_price)}</td>
                       <td>{product.unit || "pcs"}</td>
                       <td>{product.quantity}</td>
-                      <td>
-                        <a href="#"><i className="ti ti-edit"></i></a>
-                        <a href="#" className="link-danger"><i className="ti ti-trash ms-2"></i></a>
-                      </td>
                     </tr>
                   ))
                 )}
@@ -156,7 +190,7 @@ export default function Inventory() {
               <tfoot>
                 <tr>
                   <td className="border-bottom-0">Showing product per page</td>
-                  <td colSpan={10} className="border-bottom-0">
+                  <td colSpan={7} className="border-bottom-0">
                     <nav aria-label="Page navigation" className="d-flex justify-content-end">
                       <ul className="pagination mb-0">
                         <li className="page-item disabled">

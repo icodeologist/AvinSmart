@@ -22,7 +22,6 @@ type payrollSummaryEntry struct {
 	Status        string       `json:"status"`
 	PresentDays   int          `json:"present_days"`
 	AbsentDays    int          `json:"absent_days"`
-	PaidLeaveDays int          `json:"paid_leave_days"`
 	PayableDays   int          `json:"payable_days"`
 	PayableAmount money.Amount `json:"payable_amount"`
 }
@@ -96,19 +95,10 @@ func Summary(db *gorm.DB) http.HandlerFunc {
 					absentByStaff[entry.StaffID]++
 				}
 			}
-			var leave []models.LeaveRequest
-			if err := tx.Where("date >= ? AND date < ? AND status = ?", period+"-01", nextMonth(period), "approved").Find(&leave).Error; err != nil {
-				return err
-			}
-			paidLeaveByStaff := map[uint]int{}
-			for _, entry := range leave {
-				paidLeaveByStaff[entry.StaffID]++
-			}
-
 			for _, member := range members {
 				salary := salaryByStaff[member.ID]
-				payableDays := presentByStaff[member.ID] + paidLeaveByStaff[member.ID]
-				entry := payrollSummaryEntry{StaffID: member.ID, Name: member.Name, Role: member.Role, SalaryID: salary.ID, MonthlyAmount: salary.Amount, Currency: salary.Currency, Status: salary.Status, PresentDays: presentByStaff[member.ID], AbsentDays: absentByStaff[member.ID], PaidLeaveDays: paidLeaveByStaff[member.ID], PayableDays: payableDays, PayableAmount: payableAmount(salary.Amount, payableDays, calendar.WorkingDays)}
+				payableDays := presentByStaff[member.ID]
+				entry := payrollSummaryEntry{StaffID: member.ID, Name: member.Name, Role: member.Role, SalaryID: salary.ID, MonthlyAmount: salary.Amount, Currency: salary.Currency, Status: salary.Status, PresentDays: presentByStaff[member.ID], AbsentDays: absentByStaff[member.ID], PayableDays: payableDays, PayableAmount: payableAmount(salary.Amount, payableDays, calendar.WorkingDays)}
 				result.Records = append(result.Records, entry)
 				result.TotalPayable = result.TotalPayable.Add(entry.PayableAmount)
 			}

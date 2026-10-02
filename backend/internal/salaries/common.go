@@ -36,7 +36,9 @@ func parseDate(value string) (time.Time, error) {
 	return time.Parse("2006-01-02", value)
 }
 
-func currentDateUTC() string { return time.Now().UTC().Format("2006-01-02") }
+var businessTimeZone = time.FixedZone("Asia/Kolkata", 5*60*60+30*60)
+
+func currentBusinessDate() string { return time.Now().In(businessTimeZone).Format("2006-01-02") }
 
 func dateInPeriod(date, period string) bool { return strings.HasPrefix(date, period+"-") }
 

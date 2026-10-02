@@ -59,7 +59,7 @@ func TestSalaryIntegration(t *testing.T) {
 		}
 	})
 
-	t.Run("attendance leave and summary use payroll rules", func(t *testing.T) {
+	t.Run("attendance updates and summary use payroll rules", func(t *testing.T) {
 		f := newSalaryFixture(t, db)
 		calendar := f.request(http.MethodGet, "/api/v1/salaries/calendar?pay_period=2026-09", "", "")
 		if calendar.Code != http.StatusOK || !strings.Contains(calendar.Body.String(), `"working_days"`) {
@@ -73,20 +73,23 @@ func TestSalaryIntegration(t *testing.T) {
 		if attendance.Code != http.StatusOK {
 			t.Fatalf("attendance status = %d: %s", attendance.Code, attendance.Body.String())
 		}
+		attendanceUpdate := f.request(http.MethodPut, "/api/v1/salaries/attendance", fmt.Sprintf(`{"staff_id":%d,"date":"2026-09-01","status":"absent"}`, f.staffID), "attendance-update")
+		if attendanceUpdate.Code != http.StatusOK || !strings.Contains(attendanceUpdate.Body.String(), `"status":"absent"`) {
+			t.Fatalf("attendance update status/body = %d: %s", attendanceUpdate.Code, attendanceUpdate.Body.String())
+		}
+		var attendanceCount int64
+		if err := db.Model(&models.Attendance{}).Where("staff_id = ? AND date = ?", f.staffID, "2026-09-01").Count(&attendanceCount).Error; err != nil {
+			t.Fatal(err)
+		}
+		if attendanceCount != 1 {
+			t.Fatalf("attendance rows = %d, want 1 after update", attendanceCount)
+		}
 		future := f.request(http.MethodPut, "/api/v1/salaries/attendance", fmt.Sprintf(`{"staff_id":%d,"date":"2999-01-01","status":"present"}`, f.staffID), "attendance-future")
 		if future.Code != http.StatusBadRequest {
 			t.Fatalf("future attendance status = %d, want 400", future.Code)
 		}
-		leave := f.request(http.MethodPost, "/api/v1/salaries/leave-requests", fmt.Sprintf(`{"pay_period":"2026-09","staff_id":%d,"date":"2026-09-02","reason":"medical"}`, f.staffID), "leave-create")
-		if leave.Code != http.StatusCreated {
-			t.Fatalf("leave status = %d: %s", leave.Code, leave.Body.String())
-		}
-		duplicate := f.request(http.MethodPost, "/api/v1/salaries/leave-requests", fmt.Sprintf(`{"pay_period":"2026-09","staff_id":%d,"date":"2026-09-02","reason":"duplicate"}`, f.staffID), "leave-duplicate")
-		if duplicate.Code != http.StatusConflict {
-			t.Fatalf("duplicate leave status = %d, want 409", duplicate.Code)
-		}
 		summary := f.request(http.MethodGet, "/api/v1/salaries/summary?pay_period=2026-09", "", "")
-		if summary.Code != http.StatusOK || !strings.Contains(summary.Body.String(), `"present_days":1`) {
+		if summary.Code != http.StatusOK || !strings.Contains(summary.Body.String(), `"absent_days":1`) {
 			t.Fatalf("summary response = %d %s", summary.Code, summary.Body.String())
 		}
 	})

@@ -94,7 +94,7 @@ func CreateLeaveRequest(db *gorm.DB) http.HandlerFunc {
 			api.WriteValidation(w, "invalid leave request", fields)
 			return
 		}
-		if payload.Date > currentDateUTC() {
+		if payload.Date > currentBusinessDate() {
 			api.WriteError(w, http.StatusBadRequest, "leave cannot be requested for a future date")
 			return
 		}

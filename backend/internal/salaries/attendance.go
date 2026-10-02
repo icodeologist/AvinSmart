@@ -142,7 +142,7 @@ func UpsertAttendance(db *gorm.DB) http.HandlerFunc {
 			api.WriteValidation(w, "invalid attendance", fields)
 			return
 		}
-		if payload.Date > currentDateUTC() {
+		if payload.Date > currentBusinessDate() {
 			api.WriteError(w, http.StatusBadRequest, "attendance cannot be recorded for a future date")
 			return
 		}
@@ -153,15 +153,10 @@ func UpsertAttendance(db *gorm.DB) http.HandlerFunc {
 
 		var record models.Attendance
 		err := db.Transaction(func(tx *gorm.DB) error {
-			query := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("staff_id = ? AND date = ?", payload.StaffID, payload.Date).First(&record)
-			if errors.Is(query.Error, gorm.ErrRecordNotFound) {
-				record = models.Attendance{StaffID: payload.StaffID, Date: payload.Date}
-			} else if query.Error != nil {
-				return query.Error
-			}
-			before := record
-			record.Status, record.Note, record.UpdatedByID = payload.Status, strings.TrimSpace(payload.Note), &actor.UserID
-			if err := tx.Save(&record).Error; err != nil {
+			var before models.Attendance
+			var err error
+			record, before, err = upsertAttendance(tx, actor.UserID, payload.StaffID, payload.Date, payload.Status, payload.Note)
+			if err != nil {
 				return err
 			}
 			return recordAudit(tx, "attendance", record.ID, "upserted", actor.UserID, before, record)
@@ -194,7 +189,7 @@ func BulkUpsertAttendance(db *gorm.DB) http.HandlerFunc {
 			api.WriteValidation(w, "invalid attendance", fields)
 			return
 		}
-		if payload.Date > currentDateUTC() {
+		if payload.Date > currentBusinessDate() {
 			api.WriteError(w, http.StatusBadRequest, "attendance cannot be recorded for a future date")
 			return
 		}
@@ -205,16 +200,8 @@ func BulkUpsertAttendance(db *gorm.DB) http.HandlerFunc {
 				if _, err := authorizeStaff(tx, actor, entry.StaffID); err != nil {
 					return err
 				}
-				var record models.Attendance
-				query := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("staff_id = ? AND date = ?", entry.StaffID, payload.Date).First(&record)
-				if errors.Is(query.Error, gorm.ErrRecordNotFound) {
-					record = models.Attendance{StaffID: entry.StaffID, Date: payload.Date}
-				} else if query.Error != nil {
-					return query.Error
-				}
-				before := record
-				record.Status, record.Note, record.UpdatedByID = entry.Status, entry.Note, &actor.UserID
-				if err := tx.Save(&record).Error; err != nil {
+				record, before, err := upsertAttendance(tx, actor.UserID, entry.StaffID, payload.Date, entry.Status, entry.Note)
+				if err != nil {
 					return err
 				}
 				if err := recordAudit(tx, "attendance", record.ID, "upserted", actor.UserID, before, record); err != nil {
@@ -237,6 +224,32 @@ func BulkUpsertAttendance(db *gorm.DB) http.HandlerFunc {
 		}
 		api.WriteSuccess(w, http.StatusOK, records)
 	}
+}
+
+func upsertAttendance(tx *gorm.DB, actorID, staffID uint, date, status, note string) (models.Attendance, models.Attendance, error) {
+	var before models.Attendance
+	if err := tx.Where("staff_id = ? AND date = ?", staffID, date).Limit(1).Find(&before).Error; err != nil {
+		return models.Attendance{}, before, err
+	}
+
+	record := models.Attendance{
+		StaffID:     staffID,
+		Date:        date,
+		Status:      status,
+		Note:        strings.TrimSpace(note),
+		UpdatedByID: &actorID,
+	}
+	err := tx.Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "staff_id"}, {Name: "date"}},
+		DoUpdates: clause.AssignmentColumns([]string{"status", "note", "updated_by_id", "updated_at"}),
+	}).Create(&record).Error
+	if err != nil {
+		return models.Attendance{}, before, err
+	}
+	if err := tx.Where("staff_id = ? AND date = ?", staffID, date).First(&record).Error; err != nil {
+		return models.Attendance{}, before, err
+	}
+	return record, before, nil
 }
 
 func nextMonth(period string) string {

@@ -26,8 +26,5 @@ func SalaryRoutes(db *gorm.DB, cfg config.Config) http.Handler {
 	r.Get("/attendance", salaries.ListAttendance(db))
 	r.With(middleware.Idempotent(db)).Put("/attendance/bulk", salaries.BulkUpsertAttendance(db))
 	r.With(middleware.Idempotent(db)).Put("/attendance", salaries.UpsertAttendance(db))
-	r.Get("/leave-requests", salaries.ListLeaveRequests(db))
-	r.With(middleware.Idempotent(db)).Post("/leave-requests", salaries.CreateLeaveRequest(db))
-	r.With(middleware.Idempotent(db)).Patch("/leave-requests/{id}", salaries.UpdateLeaveRequest(db))
 	return r
 }

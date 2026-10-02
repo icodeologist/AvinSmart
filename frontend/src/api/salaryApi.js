@@ -32,11 +32,8 @@ export function fetchSalaryRecords(month) {
 }
 export function fetchStaffForPayroll() { return request("/staff"); }
 export function fetchAttendance(staffId, month) { return request(`/salaries/attendance?staff_id=${staffId}&month=${encodeURIComponent(month)}`); }
-export function fetchLeaveRequests(staffId, month) { return request(`/salaries/leave-requests?staff_id=${staffId}&month=${encodeURIComponent(month)}`); }
 export function saveAttendance({ staffId, date, status }) { return request("/salaries/attendance", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ staff_id: staffId, date, status }) }); }
 export function saveDailyAttendance({ date, entries }) { return request("/salaries/attendance/bulk", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ date, entries }) }); }
-export function createLeaveRequest({ staffId, date, reason, payPeriod }) { return request("/salaries/leave-requests", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ staff_id: staffId, date, reason, pay_period: payPeriod }) }); }
-export function updateLeaveRequest(id, status) { return request(`/salaries/leave-requests/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status }) }); }
 export function createSalary({ staffId, amount, currency, payPeriod }) { return request("/salaries", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ staff_id: Number(staffId), amount: String(amount), currency, pay_period: payPeriod }) }).then(normalize); }
 export function updateSalary(id, { staffId, amount, currency, payPeriod }) { return request(`/salaries/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ staff_id: Number(staffId), amount: String(amount), currency, pay_period: payPeriod }) }).then(normalize); }
 export function markSalaryPaid(id, { amount, method, reference }) { return request(`/salaries/${id}/pay`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ amount: String(amount || ""), method, reference }) }).then(normalize); }
