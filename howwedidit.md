@@ -293,3 +293,15 @@ TL;DR: salary management is now a real, authorized payroll workflow with exact m
 - Rebuilt the salary screen with dynamic month selection, salary create/edit/pay forms, backend working-day/calendar controls, public-holiday management, exact currency formatting, loading/retry/error states, duplicate-submit protection, and confirmation for irreversible actions.
 - Added salary integration coverage for authorization, idempotent creation, paid-row immutability, attendance validation, duplicate leave, and summary behavior; PostgreSQL cases run when `TEST_DATABASE_URL` is configured.
 - Verified with `GOCACHE=/tmp/avinsmart-go-cache go test ./...` and `npm run build`.
+
+## 2026-10-02 — Isolate staff POS sessions by browser tab
+
+TL;DR: staff profiles and POS tokens now share the same tab-scoped storage, while admin and staff login/logout flows no longer erase each other's active sessions across tabs.
+
+- Fixed the intermittent `bearer token is required` error that appeared when the POS page retained its tab-scoped staff profile after another admin flow deleted the globally stored POS token.
+- Moved the POS bearer token from shared `localStorage` to `sessionStorage`, matching the existing staff profile lifetime and preventing one tab from invalidating another POS tab.
+- Changed staff login and logout to preserve administrator credentials, and changed the shared sidebar logout to clear only the session type currently using that sidebar.
+- Kept admin login cleanup limited to the current tab's POS session, with one-time removal of the legacy local-storage POS token.
+- Added a `/pos` route guard and an in-page guard that both require a valid staff profile and POS token before rendering the counter.
+- Made protected-route selection prioritize the current tab's staff session so a shared administrator token cannot silently elevate a staff tab.
+- Verified with `npm run build` and the backend test suite.
