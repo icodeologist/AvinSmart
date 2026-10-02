@@ -461,7 +461,7 @@ export default function PosPage() {
     navigate("/", { replace: true });
   }
 
-  if (!staff || !getPosToken()) return <Navigate to="/staff/sales/login" replace />;
+  if (!staff || !getPosToken()) return <Navigate to="/staff/login" replace />;
 
   if (!outletId) return <main className="pos-login-shell"><div className="alert alert-danger">This staff account is not assigned to an active outlet.</div></main>;
 

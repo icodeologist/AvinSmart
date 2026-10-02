@@ -34,7 +34,7 @@ function RequireAdmin() {
     const staff = JSON.parse(sessionStorage.getItem("avinSmartPosStaff") || "null");
     if (staff) {
       if (getPosToken() && ["sales", "inventory_staff"].includes(staff.role) && ["/inventory", "/price-updates", "/profile"].includes(window.location.pathname)) return <Outlet />;
-      return <Navigate to={staff.role === "sales" ? "/pos" : "/staff/inventory/login"} replace />;
+      return <Navigate to={staff.role === "sales" ? "/pos" : "/staff/login"} replace />;
     }
   } catch {
     return <Navigate to="/" replace />;
@@ -52,7 +52,7 @@ function RequirePOS() {
       // Invalid session data falls through to the staff login page.
     }
   }
-  return <Navigate to="/staff/sales/login" replace />;
+  return <Navigate to="/staff/login" replace />;
 }
 
 export default function App() {
@@ -83,9 +83,10 @@ export default function App() {
         <Route path="/staff/salaries" element={<ManageSalaries />} />
         </Route>
       </Route>
-      <Route path="/pos/login" element={<PosLogin role="sales" />} />
-      <Route path="/staff/sales/login" element={<PosLogin role="sales" />} />
-      <Route path="/staff/inventory/login" element={<PosLogin role="inventory_staff" />} />
+      <Route path="/staff/login" element={<PosLogin />} />
+      <Route path="/pos/login" element={<Navigate to="/staff/login" replace />} />
+      <Route path="/staff/sales/login" element={<Navigate to="/staff/login" replace />} />
+      <Route path="/staff/inventory/login" element={<Navigate to="/staff/login" replace />} />
       <Route element={<RequirePOS />}>
         <Route path="/pos" element={<PosPage />} />
       </Route>

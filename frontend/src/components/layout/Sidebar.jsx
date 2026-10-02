@@ -7,7 +7,7 @@ const mainLinks = [
   { to: "/outlets", icon: "ti ti-building-store", label: "Manage Outlets" },
   { to: "/price-updates", icon: "ti ti-chart-line", label: "Update Product" },
   { to: "/bills/create", icon: "ti ti-file-invoice", label: "Legacy Bill" },
-  { to: "/staff/sales/login", icon: "ti ti-device-desktop", label: "Staff / Sales Login" },
+  { to: "/staff/login", icon: "ti ti-device-desktop", label: "Staff Login" },
   { to: "/staff", icon: "ti ti-users", label: "Manage Staff" },
   { to: "/staff/salaries", icon: "ti ti-wallet", label: "Salaries" },
   { to: "/reports", icon: "ti ti-receipt", label: "Reports" },
