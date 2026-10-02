@@ -46,14 +46,15 @@ export default function SignIn() {
   }
 
   return (
-    <div className="container d-flex align-items-center justify-content-center min-vh-100">
+    <div className="container d-flex align-items-center justify-content-center min-vh-100 py-4">
       <div className="card" style={{ maxWidth: 420, width: "100%" }}>
         <div className="card-body p-5">
           <div className="text-center mb-3">
             <Link to="/login" className="mb-4 d-inline-block">
               <span className="avin-logo" aria-label="AvinSmart"><span className="avin-logo__avin"><span className="avin-logo__a">A</span>vin</span><span className="avin-logo__smart"><span className="avin-logo__s">S</span>mart</span></span>
             </Link>
-            <h1 className="card-title mb-5 h5">Admin Login</h1>
+            <h1 className="card-title mb-4 h5">Admin Login</h1>
+            <p className="text-muted small mb-4">Sign in to manage your business.</p>
           </div>
 
           <form id="signinForm" ref={formRef} className="needs-validation mt-3" noValidate onSubmit={handleSubmit}>
@@ -90,7 +91,7 @@ export default function SignIn() {
           </form>
 
           <div className="text-center mt-3 small text-muted">
-            Need a staff account? Ask an administrator to create one.
+            No admin account? <Link to="/register" className="link-primary">Register admin</Link>
           </div>
         </div>
       </div>

@@ -29,6 +29,7 @@ type fixture struct {
 	outletB  models.Outlet
 	productA models.Product
 	productB models.Product
+	admin    models.Admin
 	token    string
 }
 
@@ -85,6 +86,20 @@ func TestPOSIntegration(t *testing.T) {
 		db.Model(&models.Payment{}).Where("order_id = ?", orderID).Count(&count)
 		if count != 1 {
 			t.Fatalf("payments created = %d, want 1", count)
+		}
+		var notification models.Notification
+		if err := db.Where("recipient_id = ? AND recipient_type = ? AND type = ?", f.admin.ID, "admin", "sale_completed").First(&notification).Error; err != nil {
+			t.Fatalf("find completed-sale notification: %v", err)
+		}
+		if notification.Metadata.OrderID != orderID || notification.Metadata.StaffName != "Test Sales" || notification.Metadata.StaffEmail != "test-sales@example.com" {
+			t.Fatalf("notification metadata = %+v", notification.Metadata)
+		}
+		if notification.Metadata.CustomerName != "" {
+			t.Fatalf("customer name = %q, want empty until customer capture is implemented", notification.Metadata.CustomerName)
+		}
+		db.Model(&models.Notification{}).Where("recipient_id = ? AND type = ?", f.admin.ID, "sale_completed").Count(&count)
+		if count != 1 {
+			t.Fatalf("completed-sale notifications = %d, want 1 after payment retry", count)
 		}
 	})
 
@@ -219,8 +234,12 @@ func TestSalesAndInventoryHappyPath(t *testing.T) {
 
 func newFixture(t *testing.T, db *gorm.DB) fixture {
 	t.Helper()
-	if err := db.Exec(`TRUNCATE TABLE payments, order_items, orders, inventory_movements, inventory_transfers, products, sub_categories, categories, staff_outlets, staff, outlets, idempotency_records RESTART IDENTITY CASCADE`).Error; err != nil {
+	if err := db.Exec(`TRUNCATE TABLE notifications, payments, order_items, orders, inventory_movements, inventory_transfers, products, sub_categories, categories, staff_outlets, staff, outlets, admins, idempotency_records RESTART IDENTITY CASCADE`).Error; err != nil {
 		t.Fatalf("reset test database: %v", err)
+	}
+	admin := models.Admin{Username: "Test Admin", Email: "admin@example.com", PasswordHash: "unused", PhoneNum: "000"}
+	if err := db.Create(&admin).Error; err != nil {
+		t.Fatal(err)
 	}
 	outletA := models.Outlet{Name: "Test Outlet A", Status: "active"}
 	outletB := models.Outlet{Name: "Test Outlet B", Status: "active"}
@@ -234,6 +253,10 @@ func newFixture(t *testing.T, db *gorm.DB) fixture {
 	if err := db.Create(&category).Error; err != nil {
 		t.Fatal(err)
 	}
+	subCategory := models.SubCategory{CategoryID: category.ID, Name: "Test Subcategory"}
+	if err := db.Create(&subCategory).Error; err != nil {
+		t.Fatal(err)
+	}
 	member := models.Staff{Name: "Test Sales", Email: "test-sales@example.com", PasswordHash: "unused", Phone: "000", Role: "sales", Status: "active"}
 	if err := db.Create(&member).Error; err != nil {
 		t.Fatal(err)
@@ -241,8 +264,8 @@ func newFixture(t *testing.T, db *gorm.DB) fixture {
 	if err := db.Create(&models.StaffOutlet{StaffID: member.ID, OutletID: outletA.ID}).Error; err != nil {
 		t.Fatal(err)
 	}
-	productA := testProduct(outletA.ID, category.ID, "A", "10.00", 10)
-	productB := testProduct(outletB.ID, category.ID, "B", "10.00", 10)
+	productA := testProduct(outletA.ID, category.ID, subCategory.ID, "A", "10.00", 10)
+	productB := testProduct(outletB.ID, category.ID, subCategory.ID, "B", "10.00", 10)
 	if err := db.Create(&productA).Error; err != nil {
 		t.Fatal(err)
 	}
@@ -254,14 +277,15 @@ func newFixture(t *testing.T, db *gorm.DB) fixture {
 	if err != nil {
 		t.Fatal(err)
 	}
-	return fixture{db: db, cfg: cfg, handler: router.New(db, cfg), outletA: outletA, outletB: outletB, productA: productA, productB: productB, token: token}
+	return fixture{db: db, cfg: cfg, handler: router.New(db, cfg), outletA: outletA, outletB: outletB, productA: productA, productB: productB, admin: admin, token: token}
 }
 
-func testProduct(outletID, categoryID uint, suffix, price string, quantity int) models.Product {
+func testProduct(outletID, categoryID, subCategoryID uint, suffix, price string, quantity int) models.Product {
 	return models.Product{
 		Title:                "Product " + suffix,
 		OutletID:             outletID,
 		CategoryID:           categoryID,
+		SubCategoryID:        subCategoryID,
 		SKUID:                "SKU-" + suffix,
 		Quantity:             quantity,
 		Unit:                 "pcs",

@@ -9,7 +9,7 @@ import react from '@vitejs/plugin-react'
 const spaCleanRoutes = new Set([
   '/', '/inventory', '/products/create', '/categories/add', '/outlets', '/outlets/categories/add',
   '/dashboard', '/price-updates', '/cash-flow', '/profile', '/profile/live-dashboard',
-  '/notifications', '/bills/create', '/reports', '/docs', '/login', '/signin', '/404',
+  '/notifications', '/bills/create', '/reports', '/docs', '/login', '/signin', '/register', '/404',
 ])
 
 const isSpaCleanRoute = (path) => {

@@ -21,7 +21,7 @@ type loginAdminRequest struct {
 func (r *loginAdminRequest) validate() api.Fields {
 	fields := api.Fields{}
 
-	r.Email = strings.TrimSpace(r.Email)
+	r.Email = strings.TrimSpace(strings.ToLower(r.Email))
 
 	if r.Email == "" {
 		fields.Add("email", "email is required")

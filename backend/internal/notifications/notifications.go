@@ -23,6 +23,10 @@ type createRequest struct {
 }
 
 func Create(db *gorm.DB, recipientID uint, recipientType, notificationType, title, message string, actionURL string) (*models.Notification, error) {
+	return CreateWithMetadata(db, recipientID, recipientType, notificationType, title, message, actionURL, models.NotificationMetadata{})
+}
+
+func CreateWithMetadata(db *gorm.DB, recipientID uint, recipientType, notificationType, title, message string, actionURL string, metadata models.NotificationMetadata) (*models.Notification, error) {
 	notification := &models.Notification{
 		RecipientID:   recipientID,
 		RecipientType: recipientType,
@@ -30,6 +34,7 @@ func Create(db *gorm.DB, recipientID uint, recipientType, notificationType, titl
 		Title:         title,
 		Message:       message,
 		ActionURL:     actionURL,
+		Metadata:      metadata,
 	}
 	if err := db.Create(notification).Error; err != nil {
 		return nil, err

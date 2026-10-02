@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { fetchNotifications, markAllNotificationsRead, markNotificationRead } from "../api/notificationsApi.js";
+import SaleNotificationDetails from "../components/notifications/SaleNotificationDetails.jsx";
 
 function formatDate(value) {
   return new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
@@ -23,7 +24,15 @@ export default function Notifications() {
     }
   }
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+    const timer = setInterval(load, 10000);
+    window.addEventListener("focus", load);
+    return () => {
+      clearInterval(timer);
+      window.removeEventListener("focus", load);
+    };
+  }, []);
 
   async function read(item) {
     if (!item.read_at) {
@@ -51,8 +60,9 @@ export default function Notifications() {
         {items.map((item) => (
           <button key={item.id} type="button" className={`list-group-item list-group-item-action text-start p-4 ${item.read_at ? "" : "bg-primary-subtle"}`} onClick={() => read(item)}>
             <div className="d-flex justify-content-between gap-3"><strong>{item.title}</strong><small className="text-muted text-nowrap">{formatDate(item.created_at)}</small></div>
-            <span className="badge text-bg-light text-capitalize mt-2">{item.type || "general"}</span>
+            <span className="badge text-bg-light text-capitalize mt-2">{(item.type || "general").replaceAll("_", " ")}</span>
             <div className="text-muted mt-1">{item.message}</div>
+            <SaleNotificationDetails notification={item} />
           </button>
         ))}
       </div></div>

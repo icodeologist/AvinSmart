@@ -8,9 +8,11 @@ import (
 	"time"
 
 	"avinsmart/backend/internal/api"
+	"avinsmart/backend/internal/auth"
 	"avinsmart/backend/internal/middleware"
 	"avinsmart/backend/internal/models"
 	"avinsmart/backend/internal/money"
+	"avinsmart/backend/internal/notifications"
 	"avinsmart/backend/internal/outletaccess"
 
 	"github.com/go-chi/chi/v5"
@@ -116,6 +118,11 @@ func RecordPayment(db *gorm.DB) http.HandlerFunc {
 			if err := tx.Save(&order).Error; err != nil {
 				return err
 			}
+			if order.Status == "paid" {
+				if err := notifyAdminsOfCompletedOrder(tx, principal, order, payment); err != nil {
+					return err
+				}
+			}
 			updatedOrder = order
 			return nil
 		})
@@ -140,4 +147,57 @@ func RecordPayment(db *gorm.DB) http.HandlerFunc {
 			"order":   updatedOrder,
 		})
 	}
+}
+
+func notifyAdminsOfCompletedOrder(tx *gorm.DB, principal auth.Principal, order models.Order, payment models.Payment) error {
+	staffName := principal.Email
+	staffEmail := principal.Email
+	staffID := principal.UserID
+
+	if principal.UserType == "staff" {
+		var staff models.Staff
+		if err := tx.Select("id", "name", "email").First(&staff, principal.UserID).Error; err != nil {
+			return err
+		}
+		staffName = staff.Name
+		staffEmail = staff.Email
+	} else if principal.UserType == "admin" {
+		var admin models.Admin
+		if err := tx.Select("id", "username", "email").First(&admin, principal.UserID).Error; err != nil {
+			return err
+		}
+		staffName = admin.Username
+		staffEmail = admin.Email
+	}
+
+	var outlet models.Outlet
+	if err := tx.Select("id", "name").First(&outlet, order.OutletID).Error; err != nil {
+		return err
+	}
+	var admins []models.Admin
+	if err := tx.Select("id").Find(&admins).Error; err != nil {
+		return err
+	}
+
+	metadata := models.NotificationMetadata{
+		OrderID:       order.ID,
+		OrderNumber:   order.OrderNumber,
+		OutletID:      outlet.ID,
+		OutletName:    outlet.Name,
+		StaffID:       staffID,
+		StaffName:     staffName,
+		StaffEmail:    staffEmail,
+		CustomerID:    nil,
+		CustomerName:  "",
+		Total:         order.Total.String(),
+		PaymentMethod: payment.Method,
+	}
+	title := fmt.Sprintf("Order %s completed", order.OrderNumber)
+	message := fmt.Sprintf("%s completed a sale for ₹%s. Customer: not captured.", staffName, order.Total.String())
+	for _, admin := range admins {
+		if _, err := notifications.CreateWithMetadata(tx, admin.ID, "admin", "sale_completed", title, message, "/notifications", metadata); err != nil {
+			return err
+		}
+	}
+	return nil
 }

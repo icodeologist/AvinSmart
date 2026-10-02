@@ -1,18 +1,24 @@
 import { API_BASE_URL, getAdminToken, unwrap } from "./config.js";
 
 async function postJSON(path, payload) {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-  });
+  let response;
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+  } catch {
+    throw new Error("Could not reach the backend. Make sure the API server is running.");
+  }
 
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
-    throw new Error(data.error || "Request failed");
+    if (data.error) throw new Error(data.error);
+    throw new Error(`Request failed with status ${response.status}.`);
   }
 
   return data;
