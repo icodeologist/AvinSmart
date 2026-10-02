@@ -39,10 +39,14 @@ export default function Sidebar({ collapsed, mobileOpen }) {
   const visibleAccountLinks = inventoryStaff || salesStaff ? accountLinks.filter((link) => link.to === "/profile") : accountLinks;
 
   function logout() {
-    localStorage.removeItem(ADMIN_SESSION_KEY);
-    localStorage.removeItem("admin");
-    localStorage.removeItem(POS_SESSION_KEY);
-    sessionStorage.removeItem("avinSmartPosStaff");
+    if (inventoryStaff || salesStaff) {
+      sessionStorage.removeItem(POS_SESSION_KEY);
+      sessionStorage.removeItem("avinSmartPosStaff");
+      localStorage.removeItem(POS_SESSION_KEY);
+    } else {
+      localStorage.removeItem(ADMIN_SESSION_KEY);
+      localStorage.removeItem("admin");
+    }
     navigate("/", { replace: true });
   }
 

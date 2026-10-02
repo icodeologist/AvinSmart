@@ -14,10 +14,11 @@ export default function PosLogin({ role = "sales" }) {
     setError("");
     try {
       const result = await loginStaff(email, password, role);
-      localStorage.setItem(POS_SESSION_KEY, result.token);
+      sessionStorage.setItem(POS_SESSION_KEY, result.token);
       sessionStorage.setItem("avinSmartPosStaff", JSON.stringify(result.user));
-      localStorage.removeItem("avinSmartAdminToken");
-      localStorage.removeItem("admin");
+      // Remove the legacy shared-browser POS token without disturbing an
+      // administrator session that may be open in another tab.
+      localStorage.removeItem(POS_SESSION_KEY);
       navigate(result.user.role === "inventory_staff" ? "/inventory" : "/pos");
     } catch (loginError) {
       setError(loginError.message || "Invalid staff email or password.");

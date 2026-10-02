@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import { fetchProducts, productImagePath } from "../api/productsApi.js";
 import { cancelOrder, createOrder, quoteOrder, recordPayment } from "../api/ordersApi.js";
-import { POS_SESSION_KEY } from "../api/config.js";
+import { POS_SESSION_KEY, getPosToken } from "../api/config.js";
 
 const money = (value) => `₹${value ?? "0.00"}`;
 
@@ -456,13 +456,12 @@ export default function PosPage() {
 
   function logout() {
     sessionStorage.removeItem("avinSmartPosStaff");
+    sessionStorage.removeItem(POS_SESSION_KEY);
     localStorage.removeItem(POS_SESSION_KEY);
-    localStorage.removeItem("avinSmartAdminToken");
-    localStorage.removeItem("admin");
     navigate("/", { replace: true });
   }
 
-  if (!staff) return <Navigate to="/staff/sales/login" replace />;
+  if (!staff || !getPosToken()) return <Navigate to="/staff/sales/login" replace />;
 
   if (!outletId) return <main className="pos-login-shell"><div className="alert alert-danger">This staff account is not assigned to an active outlet.</div></main>;
 

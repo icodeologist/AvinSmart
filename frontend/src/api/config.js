@@ -11,7 +11,7 @@ export function getAdminToken() {
 }
 
 export function getPosToken() {
-  return localStorage.getItem(POS_SESSION_KEY) || "";
+  return sessionStorage.getItem(POS_SESSION_KEY) || "";
 }
 
 export function unwrap(data) {

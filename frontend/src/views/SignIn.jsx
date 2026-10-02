@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import { login } from "../api/authApi.js";
-import { ADMIN_SESSION_KEY, getAdminToken } from "../api/config.js";
+import { ADMIN_SESSION_KEY, POS_SESSION_KEY, getAdminToken } from "../api/config.js";
 
 export default function SignIn() {
   const navigate = useNavigate();
@@ -34,8 +34,11 @@ export default function SignIn() {
 
       localStorage.setItem(ADMIN_SESSION_KEY, data.token);
       localStorage.setItem("admin", JSON.stringify(data.user));
-      localStorage.removeItem("avinSmartPosToken");
+      // End only the POS session in this tab. Other POS tabs have their own
+      // sessionStorage and remain signed in.
+      sessionStorage.removeItem(POS_SESSION_KEY);
       sessionStorage.removeItem("avinSmartPosStaff");
+      localStorage.removeItem(POS_SESSION_KEY);
       setAlert({ type: "success", message: "Login successful. Redirecting to the admin dashboard..." });
       setTimeout(() => navigate("/dashboard"), 600);
     } catch (error) {
