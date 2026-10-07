@@ -119,13 +119,10 @@ JWT_SECRET=<random-secret-at-least-32-characters>
 JWT_ISSUER=avinsmart-api
 JWT_EXPIRY_HOURS=24
 CORS_ALLOWED_ORIGINS=https://<approved-frontend-domain>
-PUBLIC_ADMIN_REGISTRATION=true
 ~~~
 
-`PUBLIC_ADMIN_REGISTRATION=true` temporarily enables the public `/register`
-frontend page and `POST /api/v1/auth/register` endpoint for launch testing.
-Set it to `false` after the test period. New accounts are signed in immediately
-after successful registration.
+The public `/register` frontend page uses `POST /api/v1/auth/register`. New
+administrator accounts are signed in immediately after successful registration.
 
 Before launch:
 

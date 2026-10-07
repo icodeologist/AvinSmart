@@ -11,26 +11,24 @@ import (
 const developmentJWTSecret = "dev-only-change-this-secret"
 
 type Config struct {
-	Address                 string
-	DatabaseURL             string
-	JWTSecret               string
-	JWTIssuer               string
-	JWTExpiry               time.Duration
-	Environment             string
-	AllowedOrigins          []string
-	PublicAdminRegistration bool
+	Address        string
+	DatabaseURL    string
+	JWTSecret      string
+	JWTIssuer      string
+	JWTExpiry      time.Duration
+	Environment    string
+	AllowedOrigins []string
 }
 
 func Load() Config {
 	return Config{
-		Address:                 serverAddress(),
-		DatabaseURL:             getEnv("DATABASE_URL", "postgres://postgres:postgres@localhost:5432/avinsmart?sslmode=disable"),
-		JWTSecret:               getEnv("JWT_SECRET", developmentJWTSecret),
-		JWTIssuer:               getEnv("JWT_ISSUER", "avinsmart-api"),
-		JWTExpiry:               getDurationEnv("JWT_EXPIRY_HOURS", 24) * time.Hour,
-		Environment:             getEnv("APP_ENV", "development"),
-		AllowedOrigins:          getCSVEnv("CORS_ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:3001"),
-		PublicAdminRegistration: getBoolEnv("PUBLIC_ADMIN_REGISTRATION", false),
+		Address:        serverAddress(),
+		DatabaseURL:    getEnv("DATABASE_URL", "postgres://postgres:postgres@localhost:5432/avinsmart?sslmode=disable"),
+		JWTSecret:      getEnv("JWT_SECRET", developmentJWTSecret),
+		JWTIssuer:      getEnv("JWT_ISSUER", "avinsmart-api"),
+		JWTExpiry:      getDurationEnv("JWT_EXPIRY_HOURS", 24) * time.Hour,
+		Environment:    getEnv("APP_ENV", "development"),
+		AllowedOrigins: getCSVEnv("CORS_ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:3001"),
 	}
 }
 
@@ -83,18 +81,6 @@ func getDurationEnv(key string, fallback int) time.Duration {
 		return time.Duration(fallback)
 	}
 	return time.Duration(value)
-}
-
-func getBoolEnv(key string, fallback bool) bool {
-	value := strings.TrimSpace(strings.ToLower(os.Getenv(key)))
-	if value == "" {
-		return fallback
-	}
-	parsed, err := strconv.ParseBool(value)
-	if err != nil {
-		return fallback
-	}
-	return parsed
 }
 
 func getCSVEnv(key, fallback string) []string {

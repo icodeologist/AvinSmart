@@ -43,16 +43,10 @@ func (r *registerAdminRequest) validate() api.Fields {
 	return fields
 }
 
-// RegisterAdmin is intentionally public only when PUBLIC_ADMIN_REGISTRATION is
-// enabled. It returns a session token so a test user can enter the app directly
-// after registration.
+// RegisterAdmin is the public administrator signup endpoint. It returns a
+// session token so the new administrator can enter the app immediately.
 func RegisterAdmin(db *gorm.DB, cfg config.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if !cfg.PublicAdminRegistration {
-			api.WriteError(w, http.StatusNotFound, "admin registration is not available")
-			return
-		}
-
 		var payload registerAdminRequest
 		if err := api.DecodeJSON(r, &payload); err != nil {
 			api.WriteError(w, http.StatusBadRequest, "invalid json body")
