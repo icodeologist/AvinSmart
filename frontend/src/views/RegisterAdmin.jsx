@@ -1,20 +1,40 @@
 import { useRef, useState } from "react";
-import { Link, Navigate } from "react-router-dom";
-import { getAdminToken } from "../api/config.js";
+import { Link, Navigate, useNavigate } from "react-router-dom";
+import { registerAdmin } from "../api/authApi.js";
+import { ADMIN_SESSION_KEY, getAdminToken } from "../api/config.js";
 
 export default function RegisterAdmin() {
   const formRef = useRef(null);
-  const [notice, setNotice] = useState("");
+  const navigate = useNavigate();
+  const [alert, setAlert] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
 
   if (getAdminToken()) return <Navigate to="/dashboard" replace />;
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault();
     const form = formRef.current;
     form.confirmPassword.setCustomValidity(form.password.value === form.confirmPassword.value ? "" : "Passwords do not match.");
     form.classList.add("was-validated");
     if (!form.checkValidity()) return;
-    setNotice("The registration form is ready. Account creation will be connected later.");
+    setSubmitting(true);
+    setAlert(null);
+    try {
+      const data = await registerAdmin({
+        username: form.username.value,
+        email: form.email.value,
+        password: form.password.value,
+        phone_num: form.phoneNum.value,
+      });
+      localStorage.setItem(ADMIN_SESSION_KEY, data.token);
+      localStorage.setItem("admin", JSON.stringify(data.user));
+      setAlert({ type: "success", message: "Admin account created. Opening your dashboard..." });
+      setTimeout(() => navigate("/dashboard"), 500);
+    } catch (error) {
+      setAlert({ type: "danger", message: error.message });
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -29,7 +49,7 @@ export default function RegisterAdmin() {
             <p className="text-muted mb-0">Create your administrator profile.</p>
           </div>
 
-          {notice ? <div className="alert alert-info" role="alert">{notice}</div> : null}
+          {alert ? <div className={`alert alert-${alert.type}`} role="alert">{alert.message}</div> : null}
           <form ref={formRef} className="needs-validation" noValidate onSubmit={handleSubmit}>
             <div className="row g-3">
               <div className="col-md-6"><label htmlFor="username" className="form-label">Admin name</label><input id="username" name="username" className="form-control" required autoFocus /><div className="invalid-feedback">Please enter an admin name.</div></div>
@@ -38,7 +58,7 @@ export default function RegisterAdmin() {
               <div className="col-md-6"><label htmlFor="password" className="form-label">Password</label><input id="password" name="password" type="password" className="form-control" minLength={8} required /><div className="invalid-feedback">Use at least 8 characters.</div></div>
               <div className="col-md-6"><label htmlFor="confirmPassword" className="form-label">Confirm password</label><input id="confirmPassword" name="confirmPassword" type="password" className="form-control" minLength={8} required onInput={(event) => event.currentTarget.setCustomValidity(formRef.current.password.value === event.currentTarget.value ? "" : "Passwords do not match.")} /><div className="invalid-feedback">Passwords must match.</div></div>
             </div>
-            <button className="btn btn-primary w-100 mt-4" type="submit">Register admin</button>
+            <button className="btn btn-primary w-100 mt-4" type="submit" disabled={submitting}>{submitting ? "Creating account..." : "Register admin"}</button>
           </form>
           <div className="text-center mt-4 small text-muted">Already registered? <Link to="/admin/login" className="link-primary">Sign in</Link></div>
         </div>

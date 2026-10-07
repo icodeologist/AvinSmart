@@ -28,6 +28,10 @@ export function login({ email, password }) {
   return postJSON("/auth/login", { email, password }).then(unwrap);
 }
 
+export function registerAdmin({ username, email, password, phone_num }) {
+  return postJSON("/auth/register", { username, email, password, phone_num }).then(unwrap);
+}
+
 export async function verifyAdminPassword(password) {
   const response = await fetch(`${API_BASE_URL}/auth/verify-password`, {
     method: "POST",
