@@ -21,6 +21,28 @@ func TestLoadReadsDeploymentSettings(t *testing.T) {
 	}
 }
 
+func TestLoadUsesRenderPortWhenServerAddressIsUnset(t *testing.T) {
+	t.Setenv("SERVER_ADDRESS", "")
+	t.Setenv("PORT", "10000")
+
+	cfg := Load()
+
+	if cfg.Address != ":10000" {
+		t.Fatalf("expected PORT to configure server address, got %q", cfg.Address)
+	}
+}
+
+func TestLoadPrefersExplicitServerAddress(t *testing.T) {
+	t.Setenv("SERVER_ADDRESS", ":9090")
+	t.Setenv("PORT", "10000")
+
+	cfg := Load()
+
+	if cfg.Address != ":9090" {
+		t.Fatalf("expected SERVER_ADDRESS to override PORT, got %q", cfg.Address)
+	}
+}
+
 func TestValidateRejectsDevelopmentSecretInProduction(t *testing.T) {
 	cfg := Config{
 		Environment:    "production",

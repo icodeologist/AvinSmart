@@ -22,7 +22,7 @@ type Config struct {
 
 func Load() Config {
 	return Config{
-		Address:        getEnv("SERVER_ADDRESS", ":8080"),
+		Address:        serverAddress(),
 		DatabaseURL:    getEnv("DATABASE_URL", "postgres://postgres:postgres@localhost:5432/avinsmart?sslmode=disable"),
 		JWTSecret:      getEnv("JWT_SECRET", developmentJWTSecret),
 		JWTIssuer:      getEnv("JWT_ISSUER", "avinsmart-api"),
@@ -30,6 +30,18 @@ func Load() Config {
 		Environment:    getEnv("APP_ENV", "development"),
 		AllowedOrigins: getCSVEnv("CORS_ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:3001"),
 	}
+}
+
+// Render provides the HTTP port through PORT. SERVER_ADDRESS remains available
+// as an explicit override for local development and other environments.
+func serverAddress() string {
+	if address := strings.TrimSpace(os.Getenv("SERVER_ADDRESS")); address != "" {
+		return address
+	}
+	if port := strings.TrimSpace(os.Getenv("PORT")); port != "" {
+		return ":" + port
+	}
+	return ":8080"
 }
 
 func (c Config) Validate() error {
